@@ -1,0 +1,5 @@
+id,brand,name,code,palletType,weightKg,dimXcm,dimYcm,dimZcm,forceQuote,forceQuoteReason,suggestGLS,suggestGLSReason,noSponda,tags
+A001,MEC,Equilibratrice 820VDL,820VDL,HALF,120,120,80,160,FALSE,,FALSE,,FALSE,"equilibratrice;auto"
+A002,Cormach,Smontagomme 535,SM-535,FULL,260,140,110,190,FALSE,,FALSE,,TRUE,"smontagomme;auto"
+A003,CASCOS,Accessorio piccolo,ACC-GLS-01,MINI,8,40,30,25,FALSE,,TRUE,"collo piccolo → GLS consigliato",FALSE,"accessorio;ricambi"
+A004,,Articolo che richiede preventivo,QUOTE-01,FULL,500,300,120,220,TRUE,"NO SPONDA / misure fuori standard",FALSE,,TRUE,"ponti;truck"
