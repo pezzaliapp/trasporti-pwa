@@ -240,30 +240,57 @@ function onArticleChange(){
   const art = selectedArticle();
   if(!art) return;
 
-  // ✅ se l’articolo ha pack.palletType, compila automaticamente PALLET TYPE
-  const pt = (art.pack?.palletType || "").trim();
-  if(pt && UI.palletType){
-    if(!isTouched(UI.palletType)){
-      UI.palletType.value = pt;
-    }
+  const r = art.rules || {};
+  const pack = art.pack || {};
+
+  // --- Auto-fill PALLET ---
+  const pt = (pack.palletType || "").trim();
+  if(pt && UI.palletType && !isTouched(UI.palletType)){
+    UI.palletType.value = pt;
   }
 
-  // ✅ AUTO-FILL GROUPAGE da rules (es. groupageLm)
-  const r = art.rules || {};
-  if(UI.service?.value === "GROUPAGE"){
-    if(r.groupageLm != null && UI.lm && !isTouched(UI.lm)){
+  // --- Auto-fill GROUPAGE ---
+  // Se l’articolo ha già regole groupage, compila i campi (senza sovrascrivere modifiche manuali).
+  // In alternativa, prova a inferire:
+  // - quintali = weightKg / 100
+  // - palletCount = 1 se esiste palletType (macchina tipicamente su 1 bancale)
+  if(UI.service && UI.service.value === "GROUPAGE"){
+    if(UI.lm && !isTouched(UI.lm) && (r.groupageLm != null)){
       UI.lm.value = String(r.groupageLm);
     }
-    // se in futuro aggiungi: groupageQuintali / groupagePalletCount
-    if(r.groupageQuintali != null && UI.quintali && !isTouched(UI.quintali)){
-      UI.quintali.value = String(r.groupageQuintali);
+
+    if(UI.quintali && !isTouched(UI.quintali)){
+      if(r.groupageQuintali != null){
+        UI.quintali.value = String(r.groupageQuintali);
+      } else if(pack.weightKg != null && !Number.isNaN(Number(pack.weightKg))){
+        UI.quintali.value = String(round2(Number(pack.weightKg) / 100));
+      }
     }
-    if(r.groupagePalletCount != null && UI.palletCount && !isTouched(UI.palletCount)){
-      UI.palletCount.value = String(r.groupagePalletCount);
+
+    if(UI.palletCount && !isTouched(UI.palletCount)){
+      if(r.groupagePalletCount != null){
+        UI.palletCount.value = String(r.groupagePalletCount);
+      } else if(pt){
+        UI.palletCount.value = "1";
+      }
     }
+
+    // Se noSponda=true, disabilita l’opzione sponda (per evitare incoerenze)
+    if(UI.optSponda){
+      if(r.noSponda){
+        UI.optSponda.checked = false;
+        UI.optSponda.disabled = true;
+      } else {
+        UI.optSponda.disabled = false;
+      }
+    }
+  } else {
+    // se non sei in GROUPAGE, riabilita sponda
+    if(UI.optSponda) UI.optSponda.disabled = false;
   }
 
   // ✅ forza servizio PALLET se stai su GLS o se service è vuoto
+  // (Equilibratrici/smontagomme/macchine => sempre bancale)
   if(UI.service){
     if(!UI.service.value || UI.service.value === "GLS"){
       UI.service.value = "PALLET";
@@ -271,6 +298,7 @@ function onArticleChange(){
     }
   }
 }
+
 
 /* -------------------- CALCOLO -------------------- */
 
@@ -603,6 +631,9 @@ async function init(){
 
   // ✅ touched tracking (manual override)
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
+  if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
+  if(UI.quintali) UI.quintali.addEventListener("input", () => markTouched(UI.quintali));
+  if(UI.palletCount) UI.palletCount.addEventListener("input", () => markTouched(UI.palletCount));
   if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
   if(UI.quintali) UI.quintali.addEventListener("input", () => markTouched(UI.quintali));
   if(UI.palletCount) UI.palletCount.addEventListener("input", () => markTouched(UI.palletCount));
