@@ -200,58 +200,41 @@ function addAlert(title, text){
   UI.outAlerts.appendChild(div);
 }
 
-/* -------------------- GROUPAGE: match provincia robusto -------------------- */
-
-function provinceKeyIncludes(targetProv, key){
-  const t = normalizeProvince(targetProv);
-  const k = (key || "").toString().toUpperCase();
-  // split su qualunque separatore non alfanumerico: "BN-NA", "BN/NA", "BN NA"
-  const parts = k.split(/[^A-Z0-9]+/).filter(Boolean);
-  return parts.includes(t);
+/* -------------------- GROUPAGE: RISOLUZIONE PROVINCE "RAGGRUPPATE" -------------------- */
+/* Esempi chiavi Excel:
+   - "FR LT"
+   - "RI VT RM"
+   - "BN-NA"
+   - "AV-SA"
+   - "MT / PZ"
+*/
+function tokenizeProvinceGroupKey(key){
+  const raw = (key || "").toUpperCase();
+  // split su spazi, slash, trattini, virgole, punto e virgola
+  const tokens = raw.split(/[\s\/,\-;]+/g).map(t => t.trim()).filter(Boolean);
+  // tieni solo token "tipo provincia" (2 lettere)
+  return tokens.filter(t => /^[A-Z]{2}$/.test(t)).map(normalizeProvince);
 }
 
-function findGroupageProvinceRates(province){
-  const prov = normalizeProvince(province);
+function resolveGroupageProvinceKey(province2){
+  const prov = normalizeProvince(province2);
   const provinces = DB.groupageRates?.provinces || {};
-  if(provinces[prov]) return { key: prov, data: provinces[prov] };
 
-  // fallback: cerca in chiavi accorpate (es. "BN-NA")
+  // 1) match diretto
+  if(provinces[prov]) return { key: prov, data: provinces[prov], matchedBy: "direct" };
+
+  // 2) match dentro chiavi raggruppate
   for(const k of Object.keys(provinces)){
-    if(provinceKeyIncludes(prov, k)){
-      return { key: k, data: provinces[k] };
+    const toks = tokenizeProvinceGroupKey(k);
+    if(toks.includes(prov)){
+      return { key: k, data: provinces[k], matchedBy: "group" };
     }
   }
+
   return null;
 }
 
 /* -------------------- AUTO-FILL DA ARTICOLO -------------------- */
-
-function applyGroupageDefaultsFromArticle(art){
-  if(!art) return;
-
-  const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
-
-  const gLm = art.rules?.groupageLm;
-  const gQ  = art.rules?.groupageQuintali;
-  const gPl = art.rules?.groupagePalletCount;
-
-  // Se presenti, li consideriamo "per pezzo" e moltiplichiamo per QTA
-  const lmVal = (gLm != null && !Number.isNaN(Number(gLm))) ? Number(gLm) * qty : null;
-  const qVal  = (gQ  != null && !Number.isNaN(Number(gQ ))) ? Number(gQ ) * qty : null;
-  const plVal = (gPl != null && !Number.isNaN(Number(gPl))) ? Number(gPl) * qty : null;
-
-  if(UI.service.value === "GROUPAGE"){
-    if(lmVal != null && UI.lm && !isTouched(UI.lm) && (parseFloat(UI.lm.value || "0") === 0)){
-      UI.lm.value = String(lmVal);
-    }
-    if(qVal != null && UI.quintali && !isTouched(UI.quintali) && (parseFloat(UI.quintali.value || "0") === 0)){
-      UI.quintali.value = String(qVal);
-    }
-    if(plVal != null && UI.palletCount && !isTouched(UI.palletCount) && (parseFloat(UI.palletCount.value || "0") === 0)){
-      UI.palletCount.value = String(plVal);
-    }
-  }
-}
 
 function onArticleChange(){
   const art = selectedArticle();
@@ -265,8 +248,20 @@ function onArticleChange(){
     }
   }
 
-  // ✅ se in GROUPAGE, prova ad auto-compilare LM/q.li/plt dai rules dell’articolo
-  applyGroupageDefaultsFromArticle(art);
+  // ✅ AUTO-FILL GROUPAGE da rules (es. groupageLm)
+  const r = art.rules || {};
+  if(UI.service?.value === "GROUPAGE"){
+    if(r.groupageLm != null && UI.lm && !isTouched(UI.lm)){
+      UI.lm.value = String(r.groupageLm);
+    }
+    // se in futuro aggiungi: groupageQuintali / groupagePalletCount
+    if(r.groupageQuintali != null && UI.quintali && !isTouched(UI.quintali)){
+      UI.quintali.value = String(r.groupageQuintali);
+    }
+    if(r.groupagePalletCount != null && UI.palletCount && !isTouched(UI.palletCount)){
+      UI.palletCount.value = String(r.groupagePalletCount);
+    }
+  }
 
   // ✅ forza servizio PALLET se stai su GLS o se service è vuoto
   if(UI.service){
@@ -337,11 +332,10 @@ function computePallet({region, palletType, qty, opts, art}){
 
   base = applyKmAndDisagiata({ base, shipments, opts, rules, alerts, mode:"PALLET" });
 
-  // forceQuote (se presente su articolo)
+  // ✅ se l’articolo richiede preventivo, lo segnaliamo ma NON blocchiamo il calcolo
   if(art?.rules?.forceQuote){
     rules.push("forceQuote");
-    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo");
-    return { cost:null, rules, alerts };
+    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo.");
   }
 
   return { cost: round2(base), rules, alerts };
@@ -362,12 +356,16 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
 
   if(!province) return { cost:null, rules:["Manca provincia"], alerts:["Seleziona una provincia."] };
 
-  const found = findGroupageProvinceRates(province);
-  if(!found){
+  const resolved = resolveGroupageProvinceKey(province);
+  if(!resolved){
     return { cost:null, rules:["Provincia non trovata"], alerts:[`Nessuna tariffa groupage per ${province}.`] };
   }
-  const p = found.data;
-  if(found.key !== normalizeProvince(province)) rules.push(`provKey:${found.key}`);
+
+  const p = resolved.data;
+  if(resolved.matchedBy === "group"){
+    rules.push(`provGroup:${resolved.key}`);
+    alerts.push(`Provincia ${province} tariffata come gruppo: ${resolved.key}`);
+  }
 
   const candidates = [];
 
@@ -411,11 +409,10 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
 
   base = applyKmAndDisagiata({ base, shipments:1, opts, rules, alerts, mode:"GROUPAGE" });
 
-  // forceQuote (se presente su articolo)
+  // ✅ se l’articolo richiede preventivo, lo segnaliamo ma NON blocchiamo il calcolo
   if(art?.rules?.forceQuote){
     rules.push("forceQuote");
-    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo");
-    return { cost:null, rules, alerts };
+    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo.");
   }
 
   return { cost: round2(base), rules, alerts };
@@ -476,29 +473,15 @@ function findArticleByCode(code){
 function onCalc(){
   const service = UI.service.value;
 
-  // ✅ normalizza regione prima di cercare in JSON
   const region = normalizeRegion(UI.region.value);
-
   const province = normalizeProvince(UI.province.value);
+
   const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
   const palletType = (UI.palletType.value || "").trim();
 
-  const art = selectedArticle();
-
-  // ✅ se non hai inserito LM/q.li/plt, prova a usare i default dell’articolo (se presenti)
-  let lm = parseFloat(UI.lm.value || "0");
-  let quintali = parseFloat(UI.quintali.value || "0");
-  let palletCount = parseFloat(UI.palletCount.value || "0");
-
-  if(service === "GROUPAGE" && art){
-    const gLm = art.rules?.groupageLm;
-    const gQ  = art.rules?.groupageQuintali;
-    const gPl = art.rules?.groupagePalletCount;
-
-    if(lm === 0 && !isTouched(UI.lm) && gLm != null && !Number.isNaN(Number(gLm))) lm = Number(gLm) * qty;
-    if(quintali === 0 && !isTouched(UI.quintali) && gQ != null && !Number.isNaN(Number(gQ))) quintali = Number(gQ) * qty;
-    if(palletCount === 0 && !isTouched(UI.palletCount) && gPl != null && !Number.isNaN(Number(gPl))) palletCount = Number(gPl) * qty;
-  }
+  const lm = parseFloat(UI.lm.value || "0");
+  const quintali = parseFloat(UI.quintali.value || "0");
+  const palletCount = parseFloat(UI.palletCount.value || "0");
 
   const opts = {
     preavviso: !!UI.optPreavviso.checked,
@@ -507,6 +490,8 @@ function onCalc(){
     disagiata: !!UI.optDisagiata?.checked,
     kmOver: parseInt(UI.kmOver?.value || "0", 10) || 0
   };
+
+  const art = selectedArticle();
 
   UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0) : "—";
 
@@ -589,21 +574,28 @@ async function init(){
     GEO = null;
   }
 
-  // Regions (usa meta.regions se presente)
+  // Regions
   const regions = DB.palletRates?.meta?.regions || Object.keys(DB.palletRates.rates || {});
   fillSelect(UI.region, regions, { placeholder: "— Seleziona Regione —" });
 
-  // Provinces
-  const allProvinces = uniq(Object.keys(DB.groupageRates?.provinces || {}).flatMap(k => {
-    // se in JSON ci sono chiavi accorpate tipo "BN-NA", esponiamo comunque le singole
-    const parts = (k || "").toString().toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
-    return parts.length ? parts : [k];
-  }).map(normalizeProvince));
-  fillSelect(UI.province, allProvinces, { placeholder: "— Seleziona Provincia —" });
+  // Provinces (UI: usa GEO se presente, altrimenti fallback)
+  // Fallback: prova a estrarre token (2 lettere) dalle chiavi groupage
+  const provFromGroupageKeys = [];
+  const groupKeys = Object.keys(DB.groupageRates?.provinces || {});
+  for(const k of groupKeys){
+    provFromGroupageKeys.push(...tokenizeProvinceGroupKey(k));
+    // se per caso hai anche province singole nel JSON:
+    if(/^[A-Z]{2}$/.test(k.toUpperCase().trim())) provFromGroupageKeys.push(normalizeProvince(k));
+  }
+  const allProvincesFallback = uniq(provFromGroupageKeys);
+
+  // se GEO c'è, la lista province di default la prendiamo dal groupage (fallback) ma poi filtriamo su change regione
+  fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
 
   // Pallet types
-  const palletTypes = DB.palletRates?.meta?.palletTypes
-    || (regions[0] && DB.palletRates?.rates?.[regions[0]] ? Object.keys(DB.palletRates.rates[regions[0]]) : []);
+  const palletTypes =
+    DB.palletRates?.meta?.palletTypes ||
+    (regions[0] && DB.palletRates?.rates?.[regions[0]] ? Object.keys(DB.palletRates.rates[regions[0]]) : []);
   fillSelect(UI.palletType, palletTypes, { placeholder: "— Seleziona tipo bancale —" });
 
   // Articles
@@ -611,35 +603,27 @@ async function init(){
 
   // ✅ touched tracking (manual override)
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
-  if(UI.lm) UI.lm.addEventListener("change", () => markTouched(UI.lm));
-  if(UI.quintali) UI.quintali.addEventListener("change", () => markTouched(UI.quintali));
-  if(UI.palletCount) UI.palletCount.addEventListener("change", () => markTouched(UI.palletCount));
+  if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
+  if(UI.quintali) UI.quintali.addEventListener("input", () => markTouched(UI.quintali));
+  if(UI.palletCount) UI.palletCount.addEventListener("input", () => markTouched(UI.palletCount));
 
   // Events
-  UI.service.addEventListener("change", () => {
-    applyServiceUI();
-    // quando passi a GROUPAGE, prova subito ad applicare default articolo
-    applyGroupageDefaultsFromArticle(selectedArticle());
-  });
-
+  UI.service.addEventListener("change", applyServiceUI);
   UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
   UI.article.addEventListener("change", onArticleChange);
-
-  // se cambi QTA, aggiorna default groupage (solo se non hai toccato i campi)
-  UI.qty.addEventListener("change", () => applyGroupageDefaultsFromArticle(selectedArticle()));
-
   UI.btnCalc.addEventListener("click", onCalc);
   UI.btnCopy.addEventListener("click", onCopy);
 
   // Filter provinces when region changes
   UI.region.addEventListener("change", () => {
     const regRaw = UI.region.value;
-    const reg = regRaw;
+    const reg = regRaw; // GEO potrebbe essere in formato diverso
     const allowed = (GEO && reg && GEO[reg]) ? GEO[reg].map(normalizeProvince) : null;
+
     if(allowed && allowed.length){
       fillSelect(UI.province, uniq(allowed), { placeholder: "— Seleziona Provincia —" });
     } else {
-      fillSelect(UI.province, allProvinces, { placeholder: "— Seleziona Provincia —" });
+      fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
     }
   });
 
@@ -650,7 +634,7 @@ async function init(){
 
   applyServiceUI();
   UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
-  UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${allProvinces.length}`;
+  UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${(allProvincesFallback||[]).length}`;
 }
 
 window.addEventListener("DOMContentLoaded", init);
