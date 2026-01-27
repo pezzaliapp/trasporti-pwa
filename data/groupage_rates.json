@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "liftgate_fee": 50,
+    "preavviso_fee": 2,
+    "insurance_pct": 0.03,
+    "notes": [
+      "Tariffe valide entro 30 km dal capoluogo (warning gestibile lato UI).",
+      "Sicilia/Sardegna via gomma: spesso preventivo (mettere forceQuote sugli articoli o creare province speciali)."
+    ]
+  },
+  "provinces": {
+    "MI": {
+      "linearMeters": [
+        { "min": 0, "max": 1.0, "price": 120 },
+        { "min": 1.1, "max": 2.5, "price": 180 },
+        { "min": 2.6, "max": null, "price": 260 }
+      ],
+      "quintali": [
+        { "min": 0, "max": 5, "price": 130 },
+        { "min": 5.5, "max": 10, "price": 190 },
+        { "min": 10.5, "max": null, "price": 280 }
+      ],
+      "pallets": [
+        { "min": 1, "max": 1, "price": 150 },
+        { "min": 2, "max": 3, "price": 210 },
+        { "min": 4, "max": null, "price": 300 }
+      ]
+    },
+    "RM": {
+      "linearMeters": [
+        { "min": 0, "max": 1.0, "price": 140 },
+        { "min": 1.1, "max": 2.5, "price": 210 },
+        { "min": 2.6, "max": null, "price": 295 }
+      ],
+      "quintali": [
+        { "min": 0, "max": 5, "price": 150 },
+        { "min": 5.5, "max": 10, "price": 220 },
+        { "min": 10.5, "max": null, "price": 310 }
+      ],
+      "pallets": [
+        { "min": 1, "max": 1, "price": 170 },
+        { "min": 2, "max": 3, "price": 240 },
+        { "min": 4, "max": null, "price": 330 }
+      ]
+    }
+  }
+}
