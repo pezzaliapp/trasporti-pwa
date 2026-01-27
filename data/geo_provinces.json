@@ -1,0 +1,22 @@
+{
+  "Abruzzo": ["AQ","CH","PE","TE"],
+  "Basilicata": ["MT","PZ"],
+  "Calabria": ["CS","CZ","KR","RC","VV"],
+  "Campania": ["AV","BN","CE","NA","SA"],
+  "Emilia-Romagna": ["BO","FC","FE","MO","PR","PC","RA","RE","RN"],
+  "Friuli-Venezia Giulia": ["GO","PN","TS","UD"],
+  "Lazio": ["FR","LT","RI","RM","VT"],
+  "Liguria": ["GE","IM","SP","SV"],
+  "Lombardia": ["BG","BS","CO","CR","LC","LO","MB","MI","MN","PV","SO","VA"],
+  "Marche": ["AN","AP","FM","MC","PU"],
+  "Molise": ["CB","IS"],
+  "Piemonte": ["AL","AT","BI","CN","NO","TO","VB","VC"],
+  "Puglia": ["BA","BR","BT","FG","LE","TA"],
+  "Sardegna": ["CA","SS","NU","OR","OT","OG","CI","VS"],
+  "Sicilia": ["AG","CL","CT","EN","ME","PA","RG","SR","TP"],
+  "Toscana": ["AR","FI","GR","LI","LU","MS","PI","PO","PT","SI"],
+  "Trentino-Alto Adige": ["BZ","TN"],
+  "Umbria": ["PG","TR"],
+  "Valle d'Aosta": ["AO"],
+  "Veneto": ["BL","PD","RO","TV","VE","VI","VR"]
+}
