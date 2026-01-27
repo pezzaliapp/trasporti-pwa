@@ -1117,9 +1117,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -1140,9 +1143,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -1163,9 +1169,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -1186,9 +1195,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -1209,9 +1221,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -1250,9 +1265,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -1338,9 +1356,12 @@
     },
     "rules": {
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "OK SPONDA\nGROUPAGE 3 MT / quotazione"
   },
   {
@@ -1379,9 +1400,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 5.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA\nGROUPAGE 5 MT / quotazione"
   },
   {
@@ -1402,9 +1426,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 6.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA\nGROUPAGE 6 MT / quotazione"
   },
   {
@@ -1632,9 +1659,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -1655,9 +1685,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 4.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 4 MT / quotazione"
   },
   {
@@ -1718,9 +1751,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
   {
@@ -1777,9 +1813,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 5.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 5 MT / quotazione"
   },
   {
@@ -1854,9 +1893,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
   {
@@ -1877,9 +1919,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -1900,9 +1945,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
   {
@@ -1923,9 +1971,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
-    "tags": [],
+    "tags": [
+      "groupage"
+    ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
   {
@@ -2559,10 +2610,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
@@ -2583,10 +2636,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
@@ -2607,10 +2662,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 4.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 4 MT / quotazione"
   },
@@ -2631,10 +2688,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
@@ -2655,10 +2714,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 4.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 4 MT / quotazione"
   },
@@ -2679,10 +2740,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 4.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 4 MT / quotazione"
   },
@@ -2703,10 +2766,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
@@ -2727,10 +2792,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
   },
@@ -2751,10 +2818,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
@@ -2775,10 +2844,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
@@ -2799,10 +2870,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
@@ -2823,10 +2896,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
@@ -2847,10 +2922,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 3.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
@@ -2871,10 +2948,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 5.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 5 MT / quotazione"
   },
@@ -2895,10 +2974,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 5.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 5 MT / quotazione"
   },
@@ -2919,10 +3000,12 @@
     "rules": {
       "noSponda": true,
       "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
+      "forceQuoteReason": "Nota: quotazione/preventivo",
+      "groupageLm": 6.0
     },
     "tags": [
-      "cascos"
+      "cascos",
+      "groupage"
     ],
     "note": "NO SPONDA\nGROUPAGE 6 MT / quotazione"
   },
@@ -2944,167 +3027,5 @@
     "tags": [
       "cascos"
     ]
-  },
-
-  {
-    "id": "WL-85-MOVE",
-    "brand": "",
-    "name": "WL 85 MOVE",
-    "code": "WL 85 MOVE",
-    "pack": {
-      "palletType": "FULL",
-      "weightKg": 815.0,
-      "dimsCm": [
-        115.0,
-        145.0,
-        248.0
-      ],
-      "volM3": 4.1354
-    },
-    "rules": {
-      "groupageLm": 3.0,
-      "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
-    },
-    "tags": [
-      "ponti",
-      "assetti"
-    ],
-    "note": "OK SPONDA\nGROUPAGE 3 MT / quotazione"
-  },
-  {
-    "id": "PFA-40",
-    "brand": "",
-    "name": "PFA 40",
-    "code": "PFA 40",
-    "pack": {
-      "palletType": "FULL",
-      "weightKg": 2540.0,
-      "dimsCm": [
-        480.0,
-        60.0,
-        34.0
-      ],
-      "volM3": 0.9792
-    },
-    "rules": {
-      "groupageLm": 5.0,
-      "noSponda": true,
-      "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
-    },
-    "tags": [
-      "ponti",
-      "assetti"
-    ],
-    "note": "NO SPONDA\nGROUPAGE 5 MT / quotazione"
-  },
-  {
-    "id": "PFA-50",
-    "brand": "",
-    "name": "PFA 50",
-    "code": "PFA 50",
-    "pack": {
-      "palletType": "FULL",
-      "weightKg": 2630.0,
-      "dimsCm": [
-        520.0,
-        60.0,
-        34.0
-      ],
-      "volM3": 1.0608
-    },
-    "rules": {
-      "groupageLm": 6.0,
-      "noSponda": true,
-      "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
-    },
-    "tags": [
-      "ponti",
-      "assetti"
-    ],
-    "note": "NO SPONDA\nGROUPAGE 6 MT / quotazione"
-  },
-  {
-    "id": "L-40",
-    "brand": "",
-    "name": "L 40",
-    "code": "L 40",
-    "pack": {
-      "palletType": "FULL",
-      "weightKg": 625.0,
-      "dimsCm": [
-        290.0,
-        50.0,
-        100.0
-      ],
-      "volM3": 1.45
-    },
-    "rules": {
-      "groupageLm": 3.0,
-      "noSponda": true,
-      "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
-    },
-    "tags": [
-      "ponti",
-      "assetti"
-    ],
-    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
-  },
-  {
-    "id": "L-45",
-    "brand": "",
-    "name": "L 45",
-    "code": "L 45",
-    "pack": {
-      "palletType": "FULL",
-      "weightKg": 750.0,
-      "dimsCm": [
-        380.0,
-        50.0,
-        100.0
-      ],
-      "volM3": 1.9
-    },
-    "rules": {
-      "groupageLm": 4.0,
-      "noSponda": true,
-      "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
-    },
-    "tags": [
-      "ponti",
-      "assetti"
-    ],
-    "note": "NO SPONDA - GROUPAGE 4 MT / quotazione"
-  },
-  {
-    "id": "ALPHA-40-cod-05100357",
-    "brand": "",
-    "name": "ALPHA 40 cod. 05100357",
-    "code": "ALPHA 40 cod. 05100357",
-    "pack": {
-      "palletType": "FULL",
-      "weightKg": 626.0,
-      "dimsCm": [
-        287.0,
-        45.0,
-        77.0
-      ],
-      "volM3": 0.994455
-    },
-    "rules": {
-      "groupageLm": 3.0,
-      "noSponda": true,
-      "forceQuote": true,
-      "forceQuoteReason": "Nota: quotazione/preventivo"
-    },
-    "tags": [
-      "ponti",
-      "assetti"
-    ],
-    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   }
 ]
