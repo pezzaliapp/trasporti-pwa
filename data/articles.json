@@ -1,0 +1,34 @@
+[
+  {
+    "id": "A001",
+    "brand": "MEC",
+    "name": "Equilibratrice 820VDL",
+    "code": "820VDL",
+    "pack": { "palletType": "HALF", "weightKg": 120, "dimsCm": [120, 80, 160] },
+    "rules": {}
+  },
+  {
+    "id": "A002",
+    "brand": "Cormach",
+    "name": "Smontagomme X (esempio)",
+    "code": "SM-535",
+    "pack": { "palletType": "FULL", "weightKg": 260, "dimsCm": [140, 110, 190] },
+    "rules": { "noSponda": true }
+  },
+  {
+    "id": "A003",
+    "brand": "CASCOS",
+    "name": "Accessorio piccolo (esempio)",
+    "code": "ACC-GLS-01",
+    "pack": { "palletType": "MINI", "weightKg": 8, "dimsCm": [40, 30, 25] },
+    "rules": { "suggestGLS": true, "suggestGLSReason": "collo piccolo → GLS consigliato" }
+  },
+  {
+    "id": "A004",
+    "brand": "—",
+    "name": "Articolo che richiede preventivo",
+    "code": "QUOTE-01",
+    "pack": { "palletType": "FULL", "weightKg": 500, "dimsCm": [300, 120, 220] },
+    "rules": { "forceQuote": true, "forceQuoteReason": "NO SPONDA / misure fuori standard" }
+  }
+]
