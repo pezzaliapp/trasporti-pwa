@@ -21,6 +21,7 @@
   </header>
 
   <main class="wrap">
+    <!-- DATI SPEDIZIONE -->
     <section class="card">
       <h2>Dati spedizione</h2>
 
@@ -79,6 +80,19 @@
           <input id="palletCount" type="number" min="0" step="1" value="0">
         </label>
 
+        <!-- NUOVI CAMPI: KM + DISAGIATA -->
+        <label class="field">
+          <span>Distanza oltre capoluogo (km)</span>
+          <input id="kmOver" type="number" min="0" step="1" value="0">
+        </label>
+
+        <label class="field">
+          <span>Vincoli zona</span>
+          <div class="checks">
+            <label><input type="checkbox" id="optDisagiata"> Località disagiata / ZTL / isole minori</label>
+          </div>
+        </label>
+
         <label class="field">
           <span>Opzioni</span>
           <div class="checks">
@@ -100,6 +114,55 @@
       </div>
     </section>
 
+    <!-- BATCH / CONVERTITORI -->
+    <section class="card">
+      <h2>Batch / Convertitori</h2>
+
+      <div class="grid">
+        <label class="field">
+          <span>Import CSV articoli → genera articles.json</span>
+          <input id="fileArticlesCsv" type="file" accept=".csv,text/csv" />
+          <div class="hint">Usa il template: <code>data/template_articles.csv</code></div>
+        </label>
+
+        <label class="field">
+          <span>Import CSV Regioni→Province → genera geo_provinces.json</span>
+          <input id="fileGeoCsv" type="file" accept=".csv,text/csv" />
+          <div class="hint">Formato: <code>region,province</code> (una riga per provincia)</div>
+        </label>
+
+        <label class="field">
+          <span>Import CSV offerta (righe) → calcola trasporto batch</span>
+          <input id="fileOfferCsv" type="file" accept=".csv,text/csv" />
+          <div class="hint">
+            Colonne minime consigliate:
+            <code>code,qty,service,region,province,palletType,lm,quintali,palletCount,kmOver,disagiata</code>
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Output</span>
+          <div class="checks">
+            <label><input type="checkbox" id="batchPickCheapest" checked> Se service vuoto → scegli costo min (PALLET vs GROUPAGE vs GLS)</label>
+            <label><input type="checkbox" id="batchUseArticlePallet" checked> Se palletType vuoto → usa quello dell’articolo</label>
+          </div>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="btnExportArticles" class="secondary" disabled>Scarica articles.json</button>
+        <button id="btnExportGeo" class="secondary" disabled>Scarica geo_provinces.json</button>
+        <button id="btnRunBatch" disabled>Calcola batch</button>
+        <button id="btnExportBatch" class="secondary" disabled>Scarica batch_result.csv</button>
+      </div>
+
+      <div class="meta" style="margin-top:12px;">
+        <div class="label">Log batch</div>
+        <pre id="batchLog">—</pre>
+      </div>
+    </section>
+
+    <!-- RISULTATO -->
     <section class="card">
       <h2>Risultato</h2>
       <div class="result">
@@ -116,6 +179,7 @@
       <div class="alerts" id="outAlerts"></div>
     </section>
 
+    <!-- DIAGNOSTICA -->
     <section class="card">
       <h2>Diagnostica</h2>
       <div class="small">
