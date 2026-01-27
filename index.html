@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Trasporti — Calcolo automatico</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#111111">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <div class="title">Trasporti</div>
+        <div class="subtitle">Calcolo automatico costi (PWA)</div>
+      </div>
+    </div>
+    <div class="status" id="pwaStatus">Offline-ready: …</div>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h2>Dati spedizione</h2>
+
+      <div class="grid">
+        <label class="field">
+          <span>Servizio</span>
+          <select id="service">
+            <option value="PALLET">Bancale (costi max per Regione)</option>
+            <option value="GROUPAGE">Groupage / Parziale</option>
+            <option value="GLS">GLS (colli piccoli / note)</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Destinazione (Regione)</span>
+          <select id="region"></select>
+        </label>
+
+        <label class="field" id="provinceField">
+          <span>Destinazione (Provincia)</span>
+          <select id="province"></select>
+        </label>
+
+        <label class="field">
+          <span>Ricerca articolo</span>
+          <input id="q" type="search" placeholder="Es. MEC 820VDL / Cormach / CASCOS..." autocomplete="off" />
+        </label>
+
+        <label class="field">
+          <span>Articolo</span>
+          <select id="article"></select>
+        </label>
+
+        <label class="field">
+          <span>Quantità</span>
+          <input id="qty" type="number" min="1" step="1" value="1">
+        </label>
+
+        <label class="field" id="palletTypeField">
+          <span>Taglia bancale (es. MINI, HALF…)</span>
+          <select id="palletType"></select>
+        </label>
+
+        <label class="field" id="lmField">
+          <span>Metri lineari (Groupage)</span>
+          <input id="lm" type="number" min="0" step="0.1" value="0">
+        </label>
+
+        <label class="field" id="quintaliField">
+          <span>Quintali (Groupage)</span>
+          <input id="quintali" type="number" min="0" step="0.5" value="0">
+        </label>
+
+        <label class="field" id="palletCountField">
+          <span>N° bancali (Groupage)</span>
+          <input id="palletCount" type="number" min="0" step="1" value="0">
+        </label>
+
+        <label class="field">
+          <span>Opzioni</span>
+          <div class="checks">
+            <label><input type="checkbox" id="optPreavviso"> Preavviso telefonico</label>
+            <label><input type="checkbox" id="optAssicurazione"> Assicurazione (3%)</label>
+            <label><input type="checkbox" id="optSponda"> Sponda (se prevista)</label>
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Note extra (facoltative)</span>
+          <input id="extraNote" type="text" placeholder="Es. località disagiata, km oltre 30, consegna su appuntamento…">
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="btnCalc">Calcola</button>
+        <button id="btnCopy" class="secondary" disabled>Copia riepilogo</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Risultato</h2>
+      <div class="result">
+        <div class="price">
+          <div class="label">Costo stimato</div>
+          <div class="value" id="outCost">—</div>
+        </div>
+        <div class="meta">
+          <div class="label">Riepilogo</div>
+          <pre id="outText">Carica dati…</pre>
+        </div>
+      </div>
+
+      <div class="alerts" id="outAlerts"></div>
+    </section>
+
+    <section class="card">
+      <h2>Diagnostica</h2>
+      <div class="small">
+        <div><b>Articolo:</b> <span id="dbgArticle">—</span></div>
+        <div><b>Regole:</b> <span id="dbgRules">—</span></div>
+        <div><b>Dataset:</b> <span id="dbgData">—</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>PezzaliAPP style — PWA offline-first</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
