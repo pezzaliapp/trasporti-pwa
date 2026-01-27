@@ -127,7 +127,7 @@ function normalizeCode(s){
     .toString()
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, ""); // toglie spazi, trattini, ecc.
+    .replace(/[^a-z0-9]/g, "");
 }
 
 // flags "touched" (non sovrascrivere se l’utente modifica a mano)
@@ -161,7 +161,7 @@ function searchArticles(q){
   const t = (q || "").trim().toLowerCase();
   if(!t) return DB.articles.slice(0, 200);
 
-  const tn = normalizeCode(t); // ✅ ricerca “smart”
+  const tn = normalizeCode(t);
 
   return DB.articles
     .filter(a => {
@@ -200,15 +200,64 @@ function addAlert(title, text){
   UI.outAlerts.appendChild(div);
 }
 
+/* -------------------- GROUPAGE: match provincia robusto -------------------- */
+
+function provinceKeyIncludes(targetProv, key){
+  const t = normalizeProvince(targetProv);
+  const k = (key || "").toString().toUpperCase();
+  // split su qualunque separatore non alfanumerico: "BN-NA", "BN/NA", "BN NA"
+  const parts = k.split(/[^A-Z0-9]+/).filter(Boolean);
+  return parts.includes(t);
+}
+
+function findGroupageProvinceRates(province){
+  const prov = normalizeProvince(province);
+  const provinces = DB.groupageRates?.provinces || {};
+  if(provinces[prov]) return { key: prov, data: provinces[prov] };
+
+  // fallback: cerca in chiavi accorpate (es. "BN-NA")
+  for(const k of Object.keys(provinces)){
+    if(provinceKeyIncludes(prov, k)){
+      return { key: k, data: provinces[k] };
+    }
+  }
+  return null;
+}
+
 /* -------------------- AUTO-FILL DA ARTICOLO -------------------- */
+
+function applyGroupageDefaultsFromArticle(art){
+  if(!art) return;
+
+  const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
+
+  const gLm = art.rules?.groupageLm;
+  const gQ  = art.rules?.groupageQuintali;
+  const gPl = art.rules?.groupagePalletCount;
+
+  // Se presenti, li consideriamo "per pezzo" e moltiplichiamo per QTA
+  const lmVal = (gLm != null && !Number.isNaN(Number(gLm))) ? Number(gLm) * qty : null;
+  const qVal  = (gQ  != null && !Number.isNaN(Number(gQ ))) ? Number(gQ ) * qty : null;
+  const plVal = (gPl != null && !Number.isNaN(Number(gPl))) ? Number(gPl) * qty : null;
+
+  if(UI.service.value === "GROUPAGE"){
+    if(lmVal != null && UI.lm && !isTouched(UI.lm) && (parseFloat(UI.lm.value || "0") === 0)){
+      UI.lm.value = String(lmVal);
+    }
+    if(qVal != null && UI.quintali && !isTouched(UI.quintali) && (parseFloat(UI.quintali.value || "0") === 0)){
+      UI.quintali.value = String(qVal);
+    }
+    if(plVal != null && UI.palletCount && !isTouched(UI.palletCount) && (parseFloat(UI.palletCount.value || "0") === 0)){
+      UI.palletCount.value = String(plVal);
+    }
+  }
+}
 
 function onArticleChange(){
   const art = selectedArticle();
   if(!art) return;
 
-  const s = UI.service?.value || "";
-
-  // --- PALLET: auto-fill palletType da articolo
+  // ✅ se l’articolo ha pack.palletType, compila automaticamente PALLET TYPE
   const pt = (art.pack?.palletType || "").trim();
   if(pt && UI.palletType){
     if(!isTouched(UI.palletType)){
@@ -216,48 +265,12 @@ function onArticleChange(){
     }
   }
 
-  // --- GROUPAGE: auto-fill LM / Quintali / PalletCount da rules.*
-  // (nel tuo JSON: rules.groupageLm)
-  const gLm  = (art.rules?.groupageLm ?? null);
-  const gQ   = (art.rules?.groupageQuintali ?? null);
-  const gPlt = (art.rules?.groupagePalletCount ?? null);
+  // ✅ se in GROUPAGE, prova ad auto-compilare LM/q.li/plt dai rules dell’articolo
+  applyGroupageDefaultsFromArticle(art);
 
-  if(s === "GROUPAGE"){
-    if(UI.lm && gLm != null && !isTouched(UI.lm)) UI.lm.value = String(gLm);
-    if(UI.quintali && gQ != null && !isTouched(UI.quintali)) UI.quintali.value = String(gQ);
-    if(UI.palletCount && gPlt != null && !isTouched(UI.palletCount)) UI.palletCount.value = String(gPlt);
-
-    // --- Sponda: se noSponda=true, disabilita e forza OFF
-    if(UI.optSponda){
-      const noSponda = !!art.rules?.noSponda;
-      if(noSponda){
-        UI.optSponda.checked = false;
-        UI.optSponda.disabled = true;
-      } else {
-        UI.optSponda.disabled = false;
-
-        // se in nota c’è "OK SPONDA" e non l’hai toccata manualmente, la spunto
-        const note = (art.note || "").toUpperCase();
-        if(note.includes("OK SPONDA") && UI.optSponda.checked === false){
-          UI.optSponda.checked = true;
-        }
-      }
-    }
-  } else {
-    // se non sei in groupage, sponda sempre abilitata (se esiste)
-    if(UI.optSponda) UI.optSponda.disabled = false;
-  }
-
-  // ✅ se service è vuoto, scegli in base all’articolo
-  if(UI.service && !UI.service.value){
-    if(art.rules?.groupageLm != null) UI.service.value = "GROUPAGE";
-    else UI.service.value = "PALLET";
-    applyServiceUI();
-  }
-
-  // ✅ se service è GLS, forzo PALLET (come prima)
+  // ✅ forza servizio PALLET se stai su GLS o se service è vuoto
   if(UI.service){
-    if(UI.service.value === "GLS"){
+    if(!UI.service.value || UI.service.value === "GLS"){
       UI.service.value = "PALLET";
       applyServiceUI();
     }
@@ -324,6 +337,13 @@ function computePallet({region, palletType, qty, opts, art}){
 
   base = applyKmAndDisagiata({ base, shipments, opts, rules, alerts, mode:"PALLET" });
 
+  // forceQuote (se presente su articolo)
+  if(art?.rules?.forceQuote){
+    rules.push("forceQuote");
+    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo");
+    return { cost:null, rules, alerts };
+  }
+
   return { cost: round2(base), rules, alerts };
 }
 
@@ -336,14 +356,18 @@ function matchGroupageBracket(value, brackets){
   return null;
 }
 
-function computeGroupage({province, lm, quintali, palletCount, opts}){
+function computeGroupage({province, lm, quintali, palletCount, opts, art}){
   const rules = [];
   const alerts = [];
 
   if(!province) return { cost:null, rules:["Manca provincia"], alerts:["Seleziona una provincia."] };
 
-  const p = DB.groupageRates?.provinces?.[province];
-  if(!p) return { cost:null, rules:["Provincia non trovata"], alerts:[`Nessuna tariffa groupage per ${province}.`] };
+  const found = findGroupageProvinceRates(province);
+  if(!found){
+    return { cost:null, rules:["Provincia non trovata"], alerts:[`Nessuna tariffa groupage per ${province}.`] };
+  }
+  const p = found.data;
+  if(found.key !== normalizeProvince(province)) rules.push(`provKey:${found.key}`);
 
   const candidates = [];
 
@@ -386,6 +410,13 @@ function computeGroupage({province, lm, quintali, palletCount, opts}){
   }
 
   base = applyKmAndDisagiata({ base, shipments:1, opts, rules, alerts, mode:"GROUPAGE" });
+
+  // forceQuote (se presente su articolo)
+  if(art?.rules?.forceQuote){
+    rules.push("forceQuote");
+    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo");
+    return { cost:null, rules, alerts };
+  }
 
   return { cost: round2(base), rules, alerts };
 }
@@ -452,9 +483,22 @@ function onCalc(){
   const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
   const palletType = (UI.palletType.value || "").trim();
 
-  const lm = parseFloat(UI.lm.value || "0");
-  const quintali = parseFloat(UI.quintali.value || "0");
-  const palletCount = parseFloat(UI.palletCount.value || "0");
+  const art = selectedArticle();
+
+  // ✅ se non hai inserito LM/q.li/plt, prova a usare i default dell’articolo (se presenti)
+  let lm = parseFloat(UI.lm.value || "0");
+  let quintali = parseFloat(UI.quintali.value || "0");
+  let palletCount = parseFloat(UI.palletCount.value || "0");
+
+  if(service === "GROUPAGE" && art){
+    const gLm = art.rules?.groupageLm;
+    const gQ  = art.rules?.groupageQuintali;
+    const gPl = art.rules?.groupagePalletCount;
+
+    if(lm === 0 && !isTouched(UI.lm) && gLm != null && !Number.isNaN(Number(gLm))) lm = Number(gLm) * qty;
+    if(quintali === 0 && !isTouched(UI.quintali) && gQ != null && !Number.isNaN(Number(gQ))) quintali = Number(gQ) * qty;
+    if(palletCount === 0 && !isTouched(UI.palletCount) && gPl != null && !Number.isNaN(Number(gPl))) palletCount = Number(gPl) * qty;
+  }
 
   const opts = {
     preavviso: !!UI.optPreavviso.checked,
@@ -463,8 +507,6 @@ function onCalc(){
     disagiata: !!UI.optDisagiata?.checked,
     kmOver: parseInt(UI.kmOver?.value || "0", 10) || 0
   };
-
-  const art = selectedArticle();
 
   UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0) : "—";
 
@@ -475,15 +517,6 @@ function onCalc(){
     out = computeGroupage({ province, lm, quintali, palletCount, opts, art });
   } else {
     out = computeGLS();
-  }
-
-  // ✅ se richiede quotazione, niente numero
-  if(art?.rules?.forceQuote){
-    out.cost = null;
-    out.alerts = out.alerts || [];
-    out.alerts.push(art.rules.forceQuoteReason || "Articolo in quotazione/preventivo.");
-    out.rules = out.rules || [];
-    out.rules.push("forceQuote");
   }
 
   UI.outAlerts.innerHTML = "";
@@ -561,11 +594,16 @@ async function init(){
   fillSelect(UI.region, regions, { placeholder: "— Seleziona Regione —" });
 
   // Provinces
-  const allProvinces = uniq(Object.keys(DB.groupageRates?.provinces || {}).map(normalizeProvince));
+  const allProvinces = uniq(Object.keys(DB.groupageRates?.provinces || {}).flatMap(k => {
+    // se in JSON ci sono chiavi accorpate tipo "BN-NA", esponiamo comunque le singole
+    const parts = (k || "").toString().toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
+    return parts.length ? parts : [k];
+  }).map(normalizeProvince));
   fillSelect(UI.province, allProvinces, { placeholder: "— Seleziona Provincia —" });
 
-  // Pallet types (usa meta.palletTypes se presente)
-  const palletTypes = DB.palletRates?.meta?.palletTypes || (regions[0] && DB.palletRates?.rates?.[regions[0]] ? Object.keys(DB.palletRates.rates[regions[0]]) : []);
+  // Pallet types
+  const palletTypes = DB.palletRates?.meta?.palletTypes
+    || (regions[0] && DB.palletRates?.rates?.[regions[0]] ? Object.keys(DB.palletRates.rates[regions[0]]) : []);
   fillSelect(UI.palletType, palletTypes, { placeholder: "— Seleziona tipo bancale —" });
 
   // Articles
@@ -573,21 +611,30 @@ async function init(){
 
   // ✅ touched tracking (manual override)
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
-  if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
-  if(UI.quintali) UI.quintali.addEventListener("input", () => markTouched(UI.quintali));
-  if(UI.palletCount) UI.palletCount.addEventListener("input", () => markTouched(UI.palletCount));
+  if(UI.lm) UI.lm.addEventListener("change", () => markTouched(UI.lm));
+  if(UI.quintali) UI.quintali.addEventListener("change", () => markTouched(UI.quintali));
+  if(UI.palletCount) UI.palletCount.addEventListener("change", () => markTouched(UI.palletCount));
 
   // Events
-  UI.service.addEventListener("change", applyServiceUI);
+  UI.service.addEventListener("change", () => {
+    applyServiceUI();
+    // quando passi a GROUPAGE, prova subito ad applicare default articolo
+    applyGroupageDefaultsFromArticle(selectedArticle());
+  });
+
   UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
   UI.article.addEventListener("change", onArticleChange);
+
+  // se cambi QTA, aggiorna default groupage (solo se non hai toccato i campi)
+  UI.qty.addEventListener("change", () => applyGroupageDefaultsFromArticle(selectedArticle()));
+
   UI.btnCalc.addEventListener("click", onCalc);
   UI.btnCopy.addEventListener("click", onCopy);
 
-  // Filter provinces when region changes (attenzione: regioni nel JSON sono uppercase)
+  // Filter provinces when region changes
   UI.region.addEventListener("change", () => {
     const regRaw = UI.region.value;
-    const reg = regRaw; // GEO potrebbe essere in formato diverso: qui non normalizzo per non rompere GEO
+    const reg = regRaw;
     const allowed = (GEO && reg && GEO[reg]) ? GEO[reg].map(normalizeProvince) : null;
     if(allowed && allowed.length){
       fillSelect(UI.province, uniq(allowed), { placeholder: "— Seleziona Provincia —" });
