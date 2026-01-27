@@ -31,8 +31,10 @@
           <select id="service">
             <option value="PALLET">Bancale (costi max per Regione)</option>
             <option value="GROUPAGE">Groupage / Parziale</option>
-            <option value="GLS">GLS (colli piccoli / note)</option>
           </select>
+          <div class="hint">
+            Nota: macchine tipo equilibratrici / smontagomme / ponti → tipicamente <b>Bancale</b>.
+          </div>
         </label>
 
         <label class="field">
@@ -61,8 +63,9 @@
         </label>
 
         <label class="field" id="palletTypeField">
-          <span>Taglia bancale (es. MINI, HALF…)</span>
+          <span>Taglia bancale</span>
           <select id="palletType"></select>
+          <div class="hint">Auto-compilata dall’articolo (se presente), ma modificabile manualmente.</div>
         </label>
 
         <label class="field" id="lmField">
@@ -80,7 +83,7 @@
           <input id="palletCount" type="number" min="0" step="1" value="0">
         </label>
 
-        <!-- NUOVI CAMPI: KM + DISAGIATA -->
+        <!-- KM + DISAGIATA -->
         <label class="field">
           <span>Distanza oltre capoluogo (km)</span>
           <input id="kmOver" type="number" min="0" step="1" value="0">
@@ -137,14 +140,20 @@
           <div class="hint">
             Colonne minime consigliate:
             <code>code,qty,service,region,province,palletType,lm,quintali,palletCount,kmOver,disagiata</code>
+            <br>
+            service ammessi: <code>PALLET</code> oppure <code>GROUPAGE</code>.
           </div>
         </label>
 
         <label class="field">
           <span>Output</span>
           <div class="checks">
-            <label><input type="checkbox" id="batchPickCheapest" checked> Se service vuoto → scegli costo min (PALLET vs GROUPAGE vs GLS)</label>
-            <label><input type="checkbox" id="batchUseArticlePallet" checked> Se palletType vuoto → usa quello dell’articolo</label>
+            <label><input type="checkbox" id="batchPickCheapest" checked>
+              Se service vuoto → scegli costo min (PALLET vs GROUPAGE)
+            </label>
+            <label><input type="checkbox" id="batchUseArticlePallet" checked>
+              Se palletType vuoto → usa quello dell’articolo
+            </label>
           </div>
         </label>
       </div>
