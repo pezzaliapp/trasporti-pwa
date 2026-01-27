@@ -206,18 +206,58 @@ function onArticleChange(){
   const art = selectedArticle();
   if(!art) return;
 
-  // ✅ se l’articolo ha pack.palletType, compila automaticamente PALLET TYPE
+  const s = UI.service?.value || "";
+
+  // --- PALLET: auto-fill palletType da articolo
   const pt = (art.pack?.palletType || "").trim();
   if(pt && UI.palletType){
     if(!isTouched(UI.palletType)){
-      UI.palletType.value = pt;   // auto-fill
+      UI.palletType.value = pt;
     }
   }
 
-  // ✅ forza servizio PALLET se stai su GLS o se service è vuoto
-  // (Equilibratrici/smontagomme/macchine => sempre bancale)
+  // --- GROUPAGE: auto-fill LM / Quintali / PalletCount da rules.*
+  // (nel tuo JSON: rules.groupageLm)
+  const gLm  = (art.rules?.groupageLm ?? null);
+  const gQ   = (art.rules?.groupageQuintali ?? null);
+  const gPlt = (art.rules?.groupagePalletCount ?? null);
+
+  if(s === "GROUPAGE"){
+    if(UI.lm && gLm != null && !isTouched(UI.lm)) UI.lm.value = String(gLm);
+    if(UI.quintali && gQ != null && !isTouched(UI.quintali)) UI.quintali.value = String(gQ);
+    if(UI.palletCount && gPlt != null && !isTouched(UI.palletCount)) UI.palletCount.value = String(gPlt);
+
+    // --- Sponda: se noSponda=true, disabilita e forza OFF
+    if(UI.optSponda){
+      const noSponda = !!art.rules?.noSponda;
+      if(noSponda){
+        UI.optSponda.checked = false;
+        UI.optSponda.disabled = true;
+      } else {
+        UI.optSponda.disabled = false;
+
+        // se in nota c’è "OK SPONDA" e non l’hai toccata manualmente, la spunto
+        const note = (art.note || "").toUpperCase();
+        if(note.includes("OK SPONDA") && UI.optSponda.checked === false){
+          UI.optSponda.checked = true;
+        }
+      }
+    }
+  } else {
+    // se non sei in groupage, sponda sempre abilitata (se esiste)
+    if(UI.optSponda) UI.optSponda.disabled = false;
+  }
+
+  // ✅ se service è vuoto, scegli in base all’articolo
+  if(UI.service && !UI.service.value){
+    if(art.rules?.groupageLm != null) UI.service.value = "GROUPAGE";
+    else UI.service.value = "PALLET";
+    applyServiceUI();
+  }
+
+  // ✅ se service è GLS, forzo PALLET (come prima)
   if(UI.service){
-    if(!UI.service.value || UI.service.value === "GLS"){
+    if(UI.service.value === "GLS"){
       UI.service.value = "PALLET";
       applyServiceUI();
     }
@@ -426,7 +466,7 @@ function onCalc(){
 
   const art = selectedArticle();
 
-  UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}}, null, 0) : "—";
+  UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0) : "—";
 
   let out;
   if(service === "PALLET"){
@@ -435,6 +475,15 @@ function onCalc(){
     out = computeGroupage({ province, lm, quintali, palletCount, opts, art });
   } else {
     out = computeGLS();
+  }
+
+  // ✅ se richiede quotazione, niente numero
+  if(art?.rules?.forceQuote){
+    out.cost = null;
+    out.alerts = out.alerts || [];
+    out.alerts.push(art.rules.forceQuoteReason || "Articolo in quotazione/preventivo.");
+    out.rules = out.rules || [];
+    out.rules.push("forceQuote");
   }
 
   UI.outAlerts.innerHTML = "";
@@ -516,7 +565,7 @@ async function init(){
   fillSelect(UI.province, allProvinces, { placeholder: "— Seleziona Provincia —" });
 
   // Pallet types (usa meta.palletTypes se presente)
-  const palletTypes = DB.palletRates?.meta?.palletTypes || Object.values(DB.palletRates?.rates?.[regions[0]] || {}).length ? Object.keys(DB.palletRates.rates[regions[0]]) : [];
+  const palletTypes = DB.palletRates?.meta?.palletTypes || (regions[0] && DB.palletRates?.rates?.[regions[0]] ? Object.keys(DB.palletRates.rates[regions[0]]) : []);
   fillSelect(UI.palletType, palletTypes, { placeholder: "— Seleziona tipo bancale —" });
 
   // Articles
@@ -524,6 +573,9 @@ async function init(){
 
   // ✅ touched tracking (manual override)
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
+  if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
+  if(UI.quintali) UI.quintali.addEventListener("input", () => markTouched(UI.quintali));
+  if(UI.palletCount) UI.palletCount.addEventListener("input", () => markTouched(UI.palletCount));
 
   // Events
   UI.service.addEventListener("change", applyServiceUI);
