@@ -1,7 +1,9 @@
-/* Trasporti PWA — logica base
-   - Carica JSON (articoli + tariffe)
+/* Trasporti PWA — logica base + Batch/Convertitori + GEO + km/disagiata
+   - Carica JSON (articoli + tariffe + geo province)
    - Calcolo: PALLET / GROUPAGE / GLS
    - Regole note: forceQuote, suggestGLS, noSponda ecc.
+   - Extra: kmOver + località disagiata (warning + eventuale surcharge da meta)
+   - Convertitori: CSV articoli -> articles.json | CSV geo -> geo_provinces.json | CSV offerta -> batch_result.csv
 */
 
 const $ = (id) => document.getElementById(id);
@@ -12,7 +14,10 @@ let DB = {
   groupageRates: null,
 };
 
+let GEO = null; // geo_provinces.json (Regione -> Province)
+
 const UI = {
+  // Core
   service: $("service"),
   region: $("region"),
   province: $("province"),
@@ -28,6 +33,11 @@ const UI = {
   quintaliField: $("quintaliField"),
   palletCount: $("palletCount"),
   palletCountField: $("palletCountField"),
+
+  // New fields
+  kmOver: $("kmOver"),
+  optDisagiata: $("optDisagiata"),
+
   optPreavviso: $("optPreavviso"),
   optAssicurazione: $("optAssicurazione"),
   optSponda: $("optSponda"),
@@ -43,6 +53,24 @@ const UI = {
   dbgRules: $("dbgRules"),
   dbgData: $("dbgData"),
   pwaStatus: $("pwaStatus"),
+
+  // Batch / Convertitori (presenti nel nuovo index.html)
+  fileArticlesCsv: $("fileArticlesCsv"),
+  fileGeoCsv: $("fileGeoCsv"),
+  fileOfferCsv: $("fileOfferCsv"),
+  batchPickCheapest: $("batchPickCheapest"),
+  batchUseArticlePallet: $("batchUseArticlePallet"),
+  btnExportArticles: $("btnExportArticles"),
+  btnExportGeo: $("btnExportGeo"),
+  btnRunBatch: $("btnRunBatch"),
+  btnExportBatch: $("btnExportBatch"),
+  batchLog: $("batchLog"),
+};
+
+const MEM = {
+  generatedArticlesJSON: null,
+  generatedGeoJSON: null,
+  batchCSVResult: null
 };
 
 function moneyEUR(v){
@@ -50,7 +78,7 @@ function moneyEUR(v){
   return new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(v);
 }
 
-function show(el, yes){ el.style.display = yes ? "" : "none"; }
+function show(el, yes){ if(el) el.style.display = yes ? "" : "none"; }
 
 async function loadJSON(path){
   const r = await fetch(path, { cache: "no-store" });
@@ -61,6 +89,7 @@ async function loadJSON(path){
 function uniq(arr){ return [...new Set(arr)].sort((a,b)=>a.localeCompare(b)); }
 
 function fillSelect(select, items, {placeholder="— Seleziona —", valueKey=null, labelKey=null} = {}){
+  if(!select) return;
   select.innerHTML = "";
   const o0 = document.createElement("option");
   o0.value = "";
@@ -79,6 +108,15 @@ function fillSelect(select, items, {placeholder="— Seleziona —", valueKey=nu
   }
 }
 
+function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+
+function normalizeProvince(p){
+  const x = (p || "").trim().toUpperCase();
+  // compatibilità: dataset vecchi usano "SU" -> lo trattiamo come "CI"
+  if(x === "SU") return "CI";
+  return x;
+}
+
 function applyServiceUI(){
   const s = UI.service.value;
 
@@ -90,9 +128,9 @@ function applyServiceUI(){
   show(UI.palletCountField, s === "GROUPAGE");
 
   // reset outputs
-  UI.outAlerts.innerHTML = "";
-  UI.outCost.textContent = "—";
-  UI.btnCopy.disabled = true;
+  if(UI.outAlerts) UI.outAlerts.innerHTML = "";
+  if(UI.outCost) UI.outCost.textContent = "—";
+  if(UI.btnCopy) UI.btnCopy.disabled = true;
 }
 
 function searchArticles(q){
@@ -108,16 +146,54 @@ function searchArticles(q){
     .slice(0, 200);
 }
 
+function renderArticleList(q){
+  const items = searchArticles(q).map(a => ({
+    id: a.id,
+    label: `${a.brand ? a.brand + " — " : ""}${a.name}${a.code ? " · " + a.code : ""}`
+  }));
+  fillSelect(UI.article, items, { placeholder: "— Seleziona articolo —", valueKey:"id", labelKey:"label" });
+}
+
 function selectedArticle(){
   const id = UI.article.value;
   return DB.articles.find(a => a.id === id) || null;
 }
 
 function addAlert(title, text){
+  if(!UI.outAlerts) return;
   const div = document.createElement("div");
   div.className = "alert";
   div.innerHTML = `<b>${title}</b><div>${text}</div>`;
   UI.outAlerts.appendChild(div);
+}
+
+/* -------------------- CALCOLO -------------------- */
+
+function applyKmAndDisagiata({base, shipments=1, opts, rules, alerts, mode="GROUPAGE"}){
+  // warning sempre; surcharge solo se configurato in groupageRates.meta
+  const kmThreshold = DB.groupageRates?.meta?.km_threshold ?? 30;
+  const kmSurcharge = DB.groupageRates?.meta?.km_surcharge_per_km ?? 0;
+  const disFee = DB.groupageRates?.meta?.disagiata_surcharge ?? 0;
+
+  const kmOver = Math.max(0, parseInt(opts?.kmOver || 0, 10) || 0);
+
+  if(kmOver > 0){
+    alerts.push(`Distanza extra indicata: +${kmOver} km (oltre ${kmThreshold} km). Verificare condizioni.`);
+    if(kmSurcharge > 0){
+      base += (kmOver * kmSurcharge) * (mode === "PALLET" ? shipments : 1);
+      rules.push(`km+${kmOver}`);
+    }
+  }
+
+  if(opts?.disagiata){
+    alerts.push("Località disagiata: possibile extra / preventivo (flag).");
+    if(disFee > 0){
+      base += disFee * (mode === "PALLET" ? shipments : 1);
+      rules.push("disagiata");
+    }
+  }
+
+  return base;
 }
 
 function computePallet({region, palletType, qty, opts, art}){
@@ -127,7 +203,6 @@ function computePallet({region, palletType, qty, opts, art}){
   if(!region) return { cost:null, rules:["Manca regione"], alerts:["Seleziona una regione."] };
   if(!palletType) return { cost:null, rules:["Manca taglia bancale"], alerts:["Seleziona taglia bancale (MINI/HALF/...)."] };
 
-  // regole articolo
   if(art?.rules?.forceQuote){
     alerts.push(`Articolo marcato "preventivo necessario": ${art.rules.forceQuoteReason || "vedi note"}`);
     return { cost:null, rules:["forceQuote"], alerts };
@@ -144,7 +219,6 @@ function computePallet({region, palletType, qty, opts, art}){
     return { cost:null, rules:["Tariffa non trovata"], alerts:[`Nessuna tariffa bancale per ${region} / ${palletType}.`] };
   }
 
-  // regola max 5 plt per spedizione (se qty significa bancali)
   const maxPerShipment = DB.palletRates?.meta?.maxPalletsPerShipment ?? 5;
   const shipments = Math.ceil(qty / maxPerShipment);
   if(shipments > 1){
@@ -154,7 +228,6 @@ function computePallet({region, palletType, qty, opts, art}){
 
   let base = rate * qty;
 
-  // opzioni (meta configurabili)
   if(opts.preavviso && DB.palletRates?.meta?.preavviso_fee != null){
     base += DB.palletRates.meta.preavviso_fee * shipments;
     rules.push("preavviso");
@@ -164,11 +237,13 @@ function computePallet({region, palletType, qty, opts, art}){
     rules.push("assicurazione");
   }
 
+  // km/disagiata
+  base = applyKmAndDisagiata({ base, shipments, opts, rules, alerts, mode:"PALLET" });
+
   return { cost: round2(base), rules, alerts };
 }
 
 function matchGroupageBracket(value, brackets){
-  // brackets: [{min, max, price}] — max può essere null
   for(const b of brackets){
     const okMin = value >= (b.min ?? 0);
     const okMax = (b.max == null) ? true : value <= b.max;
@@ -191,7 +266,6 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
   const p = DB.groupageRates?.provinces?.[province];
   if(!p) return { cost:null, rules:["Provincia non trovata"], alerts:[`Nessuna tariffa groupage per ${province}.`] };
 
-  // scegliamo il migliore tra le tre metriche disponibili (se valorizzate)
   const candidates = [];
 
   if(lm > 0 && Array.isArray(p.linearMeters)){
@@ -215,12 +289,10 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
     };
   }
 
-  // scegli il minimo come “miglior costo”
   candidates.sort((a,b)=>a.price-b.price);
   let base = candidates[0].price;
   rules.push(`best:${candidates[0].mode}`);
 
-  // sponda / extra
   if(opts.sponda && DB.groupageRates?.meta?.liftgate_fee != null){
     base += DB.groupageRates.meta.liftgate_fee;
     rules.push("sponda");
@@ -234,13 +306,11 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
     rules.push("assicurazione");
   }
 
-  // note articolo
-  if(art?.rules?.noSponda){
-    alerts.push(`NO SPONDA: attenzione, potrebbe non essere possibile in consegna.`);
-  }
-  if(art?.rules?.suggestGLS){
-    alerts.push(`Articolo consigliato GLS: ${art.rules.suggestGLSReason || "vedi note"}`);
-  }
+  if(art?.rules?.noSponda) alerts.push(`NO SPONDA: attenzione, potrebbe non essere possibile in consegna.`);
+  if(art?.rules?.suggestGLS) alerts.push(`Articolo consigliato GLS: ${art.rules.suggestGLSReason || "vedi note"}`);
+
+  // km/disagiata
+  base = applyKmAndDisagiata({ base, shipments:1, opts, rules, alerts, mode:"GROUPAGE" });
 
   return { cost: round2(base), rules, alerts };
 }
@@ -249,8 +319,6 @@ function computeGLS({region, qty, opts, art}){
   const rules = [];
   const alerts = [];
 
-  // GLS in questo MVP: costo base per regione + moltiplicatore qty
-  // (puoi sostituirlo con listino reale GLS oppure “solo suggerimento”)
   if(!region) return { cost:null, rules:["Manca regione"], alerts:["Seleziona una regione."] };
 
   const base = DB.palletRates?.meta?.gls_base_by_region?.[region];
@@ -270,10 +338,11 @@ function computeGLS({region, qty, opts, art}){
     rules.push("assicurazione");
   }
 
+  // km/disagiata (solo warning/surcharge se vuoi; usa stessa meta)
+  cost = applyKmAndDisagiata({ base: cost, shipments:1, opts, rules, alerts, mode:"GLS" });
+
   return { cost: round2(cost), rules, alerts };
 }
-
-function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
 
 function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote}){
   const lines = [];
@@ -283,14 +352,14 @@ function buildSummary({service, region, province, art, qty, palletType, lm, quin
   lines.push(`QTA: ${qty}`);
 
   if(service === "PALLET") lines.push(`Bancale: ${palletType || "—"}`);
-  if(service === "GROUPAGE"){
-    lines.push(`Groupage: LM=${lm} | q.li=${quintali} | plt=${palletCount}`);
-  }
+  if(service === "GROUPAGE") lines.push(`Groupage: LM=${lm} | q.li=${quintali} | plt=${palletCount}`);
 
   const optList = [];
   if(opts.preavviso) optList.push("preavviso");
   if(opts.assicurazione) optList.push("assicurazione");
   if(opts.sponda) optList.push("sponda");
+  if(opts.disagiata) optList.push("disagiata");
+  if((opts.kmOver||0) > 0) optList.push(`km+${opts.kmOver}`);
   lines.push(`OPZIONI: ${optList.length ? optList.join(", ") : "nessuna"}`);
 
   if(extraNote?.trim()) lines.push(`NOTE EXTRA: ${extraNote.trim()}`);
@@ -308,61 +377,337 @@ function buildSummary({service, region, province, art, qty, palletType, lm, quin
   return lines.join("\n");
 }
 
-async function init(){
-  // PWA
-  if ("serviceWorker" in navigator){
-    try{
-      await navigator.serviceWorker.register("sw.js");
-      UI.pwaStatus.textContent = "Offline-ready: sì";
-    } catch(e){
-      UI.pwaStatus.textContent = "Offline-ready: no";
+/* -------------------- CSV HELPERS -------------------- */
+
+function parseCSV(text){
+  const rows = [];
+  let cur = "", inQ = false;
+  const line = [];
+  const pushField = () => { line.push(cur); cur = ""; };
+  const pushLine = () => { rows.push(line.splice(0)); };
+
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    const next = text[i+1];
+
+    if(ch === '"'){
+      if(inQ && next === '"'){ cur += '"'; i++; }
+      else inQ = !inQ;
+      continue;
     }
-  } else {
-    UI.pwaStatus.textContent = "Offline-ready: n/d";
+    if(!inQ && ch === ','){ pushField(); continue; }
+    if(!inQ && ch === '\n'){ pushField(); pushLine(); continue; }
+    if(ch === '\r') continue;
+    cur += ch;
+  }
+  pushField(); pushLine();
+  return rows.filter(r => r.some(c => (c||"").trim().length));
+}
+
+function csvToObjects(text){
+  const rows = parseCSV(text);
+  if(rows.length < 2) return [];
+  const header = rows[0].map(h => h.trim());
+  return rows.slice(1).map(r => {
+    const o = {};
+    header.forEach((h, idx) => o[h] = (r[idx] ?? "").trim());
+    return o;
+  });
+}
+
+function toBool(v){
+  const t = String(v||"").trim().toLowerCase();
+  return (t === "true" || t === "1" || t === "yes" || t === "y");
+}
+
+async function readFileText(file){
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsText(file);
+  });
+}
+
+function downloadFile(filename, content, mime="application/json"){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function toCSV(rows){
+  const esc = (v) => {
+    const s = String(v ?? "");
+    if(/[,"\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+    return s;
+  };
+  const header = Object.keys(rows[0] || {});
+  const lines = [header.join(",")];
+  for(const r of rows){
+    lines.push(header.map(h => esc(r[h])).join(","));
+  }
+  return lines.join("\n");
+}
+
+/* -------------------- CONVERTITORE ARTICOLI -------------------- */
+
+function convertArticlesCSVtoJSON(objs){
+  const out = objs.map(r => {
+    const id = r.id || (crypto?.randomUUID ? crypto.randomUUID() : `A_${Date.now()}_${Math.random().toString(16).slice(2)}`);
+    const palletType = (r.palletType || "").toUpperCase().trim();
+    const weightKg = r.weightKg ? Number(r.weightKg) : null;
+    const dims = [r.dimXcm, r.dimYcm, r.dimZcm].map(x => x ? Number(x) : null);
+    const tags = (r.tags || "").split(/[;|,]/g).map(t => t.trim()).filter(Boolean);
+
+    const rules = {};
+    if(toBool(r.forceQuote)) {
+      rules.forceQuote = true;
+      if(r.forceQuoteReason) rules.forceQuoteReason = r.forceQuoteReason;
+    }
+    if(toBool(r.suggestGLS)) {
+      rules.suggestGLS = true;
+      if(r.suggestGLSReason) rules.suggestGLSReason = r.suggestGLSReason;
+    }
+    if(toBool(r.noSponda)) rules.noSponda = true;
+
+    const pack = { palletType };
+    if(weightKg != null) pack.weightKg = weightKg;
+    if(dims.some(x => x != null)) pack.dimsCm = dims;
+
+    return {
+      id,
+      brand: r.brand || "",
+      name: r.name || "",
+      code: r.code || "",
+      pack,
+      rules,
+      tags
+    };
+  });
+
+  return out;
+}
+
+async function onImportArticlesCSV(){
+  const file = UI.fileArticlesCsv?.files?.[0];
+  if(!file) return;
+
+  const txt = await readFileText(file);
+  const objs = csvToObjects(txt);
+  const json = convertArticlesCSVtoJSON(objs);
+
+  MEM.generatedArticlesJSON = json;
+  if(UI.btnExportArticles) UI.btnExportArticles.disabled = false;
+
+  if(UI.batchLog){
+    UI.batchLog.textContent =
+      `Import articoli CSV OK\n` +
+      `righe=${objs.length}\n` +
+      `articles.json generato=${json.length} record\n\n` +
+      `Suggerimento: sostituisci data/articles.json nel repo con questo output.`;
+  }
+}
+
+function onExportArticlesJSON(){
+  if(!MEM.generatedArticlesJSON) return;
+  downloadFile("articles.json", JSON.stringify(MEM.generatedArticlesJSON, null, 2), "application/json");
+}
+
+/* -------------------- CONVERTITORE GEO -------------------- */
+
+function convertGeoCSVtoJSON(objs){
+  const map = {};
+  for(const r of objs){
+    const region = (r.region || "").trim();
+    const prov = normalizeProvince(r.province || "");
+    if(!region || !prov) continue;
+    if(!map[region]) map[region] = [];
+    if(!map[region].includes(prov)) map[region].push(prov);
+  }
+  for(const k of Object.keys(map)){
+    map[k].sort((a,b)=>a.localeCompare(b));
+  }
+  return map;
+}
+
+async function onImportGeoCSV(){
+  const file = UI.fileGeoCsv?.files?.[0];
+  if(!file) return;
+
+  const txt = await readFileText(file);
+  const objs = csvToObjects(txt);
+  const geo = convertGeoCSVtoJSON(objs);
+
+  MEM.generatedGeoJSON = geo;
+  if(UI.btnExportGeo) UI.btnExportGeo.disabled = false;
+
+  if(UI.batchLog){
+    UI.batchLog.textContent =
+      `Import geo CSV OK\n` +
+      `righe=${objs.length}\n` +
+      `regioni=${Object.keys(geo).length}\n\n` +
+      `Suggerimento: salva come data/geo_provinces.json nel repo.`;
+  }
+}
+
+function onExportGeoJSON(){
+  if(!MEM.generatedGeoJSON) return;
+  downloadFile("geo_provinces.json", JSON.stringify(MEM.generatedGeoJSON, null, 2), "application/json");
+}
+
+/* -------------------- BATCH OFFERTA -------------------- */
+
+function findArticleByCode(code){
+  const t = (code||"").trim().toLowerCase();
+  if(!t) return null;
+  return DB.articles.find(a => (a.code||"").trim().toLowerCase() === t) || null;
+}
+
+function bestCostForRow(row, opts){
+  const art = findArticleByCode(row.code || "");
+  const qty = Math.max(1, parseInt(row.qty || "1", 10));
+  const region = row.region || "";
+  const province = normalizeProvince(row.province || "");
+  const service = (row.service || "").toUpperCase().trim();
+
+  const lm = Number(row.lm || 0);
+  const quintali = Number(row.quintali || 0);
+  const palletCount = Number(row.palletCount || 0);
+
+  let palletType = (row.palletType || "").toUpperCase().trim();
+  if(!palletType && UI.batchUseArticlePallet?.checked) palletType = (art?.pack?.palletType || "").toUpperCase();
+
+  const run = (svc) => {
+    if(svc === "PALLET") return computePallet({ region, palletType, qty, opts, art });
+    if(svc === "GROUPAGE") return computeGroupage({ province, lm, quintali, palletCount, opts, art });
+    return computeGLS({ region, qty, opts, art });
+  };
+
+  if(service){
+    const out = run(service);
+    return { service, out, art, qty, region, province, palletType, lm, quintali, palletCount };
   }
 
-  // Load datasets
-  DB.articles = await loadJSON("data/articles.json");
-  DB.palletRates = await loadJSON("data/pallet_rates_by_region.json");
-  DB.groupageRates = await loadJSON("data/groupage_rates.json");
+  if(!UI.batchPickCheapest?.checked){
+    const out = run("PALLET");
+    return { service:"PALLET", out, art, qty, region, province, palletType, lm, quintali, palletCount };
+  }
 
-  // Regions from pallet rates meta list or keys
-  const regions = DB.palletRates?.meta?.regions || Object.keys(DB.palletRates.rates || {});
-  fillSelect(UI.region, regions, { placeholder: "— Seleziona Regione —" });
+  const candidates = [
+    {svc:"PALLET", out: run("PALLET")},
+    {svc:"GROUPAGE", out: run("GROUPAGE")},
+    {svc:"GLS", out: run("GLS")}
+  ];
 
-  // Provinces from groupage
-  const provinces = Object.keys(DB.groupageRates?.provinces || {});
-  fillSelect(UI.province, provinces, { placeholder: "— Seleziona Provincia —" });
-
-  // Pallet types
-  const palletTypes = DB.palletRates?.meta?.palletTypes || ["MINI","QUARTER","HALF","MEDIUM","FULL"];
-  fillSelect(UI.palletType, palletTypes, { placeholder: "— Seleziona Taglia —" });
-
-  // Articles initial
-  renderArticleList("");
-
-  UI.service.addEventListener("change", applyServiceUI);
-  UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
-  UI.btnCalc.addEventListener("click", onCalc);
-  UI.btnCopy.addEventListener("click", onCopy);
-
-  applyServiceUI();
-  UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
-  UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${provinces.length}`;
+  const valid = candidates.filter(c => c.out?.cost != null);
+  if(!valid.length){
+    return { service:"PALLET", out: candidates[0].out, art, qty, region, province, palletType, lm, quintali, palletCount };
+  }
+  valid.sort((a,b)=>a.out.cost - b.out.cost);
+  return { service: valid[0].svc, out: valid[0].out, art, qty, region, province, palletType, lm, quintali, palletCount };
 }
 
-function renderArticleList(q){
-  const items = searchArticles(q).map(a => ({
-    id: a.id,
-    label: `${a.brand ? a.brand + " — " : ""}${a.name}${a.code ? " · " + a.code : ""}`
-  }));
-  fillSelect(UI.article, items, { placeholder: "— Seleziona articolo —", valueKey:"id", labelKey:"label" });
+async function onRunBatch(){
+  const file = UI.fileOfferCsv?.files?.[0];
+  if(!file) return;
+
+  const txt = await readFileText(file);
+  const objs = csvToObjects(txt);
+  if(!objs.length){
+    if(UI.batchLog) UI.batchLog.textContent = "CSV offerta vuoto o non valido.";
+    return;
+  }
+
+  const baseOpts = {
+    preavviso: !!UI.optPreavviso?.checked,
+    assicurazione: !!UI.optAssicurazione?.checked,
+    sponda: !!UI.optSponda?.checked
+  };
+
+  const outRows = [];
+  let ok = 0, ko = 0;
+
+  for(const r of objs){
+    const row = {
+      code: r.code || r.CODICE || r.articolo || r.Articolo || "",
+      qty: r.qty || r.QTY || r.qta || r.QTA || "1",
+      service: r.service || r.SERVICE || "",
+      region: r.region || r.REGIONE || "",
+      province: normalizeProvince(r.province || r.PROVINCIA || ""),
+      palletType: r.palletType || r.PALLET || "",
+      lm: r.lm || r.LM || "0",
+      quintali: r.quintali || r.QUINTALI || "0",
+      palletCount: r.palletCount || r.PALLETS || r.BANCALI || "0",
+      kmOver: r.kmOver || r.KMOVER || r.km || r.KM || "0",
+      disagiata: r.disagiata || r.DISAGIATA || "0"
+    };
+
+    const rowOpts = {
+      ...baseOpts,
+      kmOver: parseInt(row.kmOver || "0", 10) || 0,
+      disagiata: (String(row.disagiata||"").trim() === "1" || String(row.disagiata||"").trim().toLowerCase() === "true")
+    };
+
+    const res = bestCostForRow(row, rowOpts);
+    const cost = res.out?.cost;
+
+    const alerts = (res.out?.alerts || []).join(" | ");
+    const rules = (res.out?.rules || []).join(" | ");
+
+    const line = {
+      code: row.code,
+      qty: row.qty,
+      service: res.service,
+      region: row.region,
+      province: row.province,
+      palletType: res.palletType || "",
+      lm: row.lm,
+      quintali: row.quintali,
+      palletCount: row.palletCount,
+      kmOver: row.kmOver,
+      disagiata: row.disagiata,
+      cost_eur: (cost == null) ? "" : cost,
+      cost_fmt: moneyEUR(cost),
+      article_name: res.art ? `${res.art.brand || ""} ${res.art.name}`.trim() : "",
+      flags: alerts,
+      rules: rules
+    };
+
+    if(cost == null) ko++; else ok++;
+    outRows.push(line);
+  }
+
+  MEM.batchCSVResult = outRows;
+  if(UI.btnExportBatch) UI.btnExportBatch.disabled = false;
+
+  if(UI.batchLog){
+    UI.batchLog.textContent =
+      `Batch completato\n` +
+      `righe input=${objs.length}\n` +
+      `righe con costo=${ok}\n` +
+      `righe da verificare/preventivo=${ko}\n\n` +
+      `Suggerimento: filtra per cost_eur vuoto o flags non vuoto per vedere le eccezioni.`;
+  }
 }
+
+function onExportBatch(){
+  if(!MEM.batchCSVResult || !MEM.batchCSVResult.length) return;
+  const csv = toCSV(MEM.batchCSVResult);
+  downloadFile("batch_result.csv", csv, "text/csv");
+}
+
+/* -------------------- UI ACTIONS -------------------- */
 
 function onCalc(){
   const service = UI.service.value;
   const region = UI.region.value;
-  const province = UI.province.value;
+  const province = normalizeProvince(UI.province.value);
   const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
   const palletType = UI.palletType.value;
 
@@ -371,14 +716,15 @@ function onCalc(){
   const palletCount = parseFloat(UI.palletCount.value || "0");
 
   const opts = {
-    preavviso: UI.optPreavviso.checked,
-    assicurazione: UI.optAssicurazione.checked,
-    sponda: UI.optSponda.checked
+    preavviso: !!UI.optPreavviso.checked,
+    assicurazione: !!UI.optAssicurazione.checked,
+    sponda: !!UI.optSponda.checked,
+    disagiata: !!UI.optDisagiata?.checked,
+    kmOver: parseInt(UI.kmOver?.value || "0", 10) || 0
   };
 
   const art = selectedArticle();
 
-  // debug
   UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, rules:art.rules || {}}, null, 0) : "—";
 
   let out;
@@ -390,7 +736,6 @@ function onCalc(){
     out = computeGLS({ region, qty, opts, art });
   }
 
-  // alerts UI
   UI.outAlerts.innerHTML = "";
   (out.alerts || []).forEach(a => addAlert("Nota / Controllo", a));
 
@@ -411,7 +756,6 @@ function onCalc(){
 
   UI.outText.textContent = summary;
   UI.outCost.textContent = moneyEUR(out.cost);
-
   UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
   UI.btnCopy.disabled = !summary;
@@ -426,7 +770,6 @@ async function onCopy(){
     UI.btnCopy.textContent = "Copiato ✓";
     setTimeout(()=> UI.btnCopy.textContent="Copia riepilogo", 1000);
   } catch {
-    // fallback
     const ta = document.createElement("textarea");
     ta.value = text;
     document.body.appendChild(ta);
@@ -434,6 +777,96 @@ async function onCopy(){
     document.execCommand("copy");
     ta.remove();
   }
+}
+
+/* -------------------- INIT -------------------- */
+
+async function init(){
+  // PWA
+  if ("serviceWorker" in navigator){
+    try{
+      await navigator.serviceWorker.register("sw.js");
+      UI.pwaStatus.textContent = "Offline-ready: sì";
+    } catch(e){
+      UI.pwaStatus.textContent = "Offline-ready: no";
+    }
+  } else {
+    UI.pwaStatus.textContent = "Offline-ready: n/d";
+  }
+
+  // Load datasets
+  DB.articles = await loadJSON("data/articles.json");
+  DB.palletRates = await loadJSON("data/pallet_rates_by_region.json");
+  DB.groupageRates = await loadJSON("data/groupage_rates.json");
+
+  // GEO (province by region)
+  try{
+    GEO = await loadJSON("data/geo_provinces.json");
+  } catch {
+    GEO = null; // non obbligatorio
+  }
+
+  // Regions
+  const regions = DB.palletRates?.meta?.regions || Object.keys(DB.palletRates.rates || {});
+  fillSelect(UI.region, regions, { placeholder: "— Seleziona Regione —" });
+
+  // Provinces
+  const allProvinces = uniq(Object.keys(DB.groupageRates?.provinces || {}).map(normalizeProvince));
+  fillSelect(UI.province, allProvinces, { placeholder: "— Seleziona Provincia —" });
+
+  // Pallet types
+  const palletTypes = DB.palletRates?.meta?.palletTypes || ["MINI","QUARTER","HALF","MEDIUM","FULL"];
+  fillSelect(UI.palletType, palletTypes, { placeholder: "— Seleziona Taglia —" });
+
+  // Articles
+  renderArticleList("");
+
+  // Events
+  UI.service.addEventListener("change", applyServiceUI);
+  UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
+  UI.btnCalc.addEventListener("click", onCalc);
+  UI.btnCopy.addEventListener("click", onCopy);
+
+  // Filter provinces when region changes
+  UI.region.addEventListener("change", () => {
+    const reg = UI.region.value;
+    const allowed = (GEO && reg && GEO[reg]) ? GEO[reg].map(normalizeProvince) : null;
+    if(allowed && allowed.length){
+      fillSelect(UI.province, uniq(allowed), { placeholder: "— Seleziona Provincia —" });
+    } else {
+      fillSelect(UI.province, allProvinces, { placeholder: "— Seleziona Provincia —" });
+    }
+  });
+
+  // Normalize province always
+  UI.province.addEventListener("change", () => {
+    const v = normalizeProvince(UI.province.value);
+    if(UI.province.value !== v) UI.province.value = v;
+  });
+
+  // Convertitori / Batch
+  if(UI.fileArticlesCsv) UI.fileArticlesCsv.addEventListener("change", onImportArticlesCSV);
+  if(UI.btnExportArticles) UI.btnExportArticles.addEventListener("click", onExportArticlesJSON);
+  if(UI.btnExportArticles) UI.btnExportArticles.disabled = true;
+
+  if(UI.fileGeoCsv) UI.fileGeoCsv.addEventListener("change", onImportGeoCSV);
+  if(UI.btnExportGeo) UI.btnExportGeo.addEventListener("click", onExportGeoJSON);
+  if(UI.btnExportGeo) UI.btnExportGeo.disabled = true;
+
+  if(UI.fileOfferCsv){
+    UI.fileOfferCsv.addEventListener("change", () => {
+      const has = !!UI.fileOfferCsv.files?.[0];
+      if(UI.btnRunBatch) UI.btnRunBatch.disabled = !has;
+    });
+  }
+  if(UI.btnRunBatch) UI.btnRunBatch.addEventListener("click", onRunBatch);
+  if(UI.btnExportBatch) UI.btnExportBatch.addEventListener("click", onExportBatch);
+  if(UI.btnRunBatch) UI.btnRunBatch.disabled = true;
+  if(UI.btnExportBatch) UI.btnExportBatch.disabled = true;
+
+  applyServiceUI();
+  UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
+  UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${allProvinces.length}`;
 }
 
 window.addEventListener("DOMContentLoaded", init);
