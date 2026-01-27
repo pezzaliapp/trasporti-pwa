@@ -1,34 +1,2948 @@
 [
   {
-    "id": "A001",
+    "id": "TOUCH-MEC-1000-SONAR",
     "brand": "MEC",
-    "name": "Equilibratrice 820VDL",
-    "code": "820VDL",
-    "pack": { "palletType": "HALF", "weightKg": 120, "dimsCm": [120, 80, 160] },
-    "rules": {}
+    "name": "TOUCH MEC 1000 SONAR",
+    "code": "TOUCH MEC 1000 SONAR",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 191.0,
+      "dimsCm": [
+        130.0,
+        75.0,
+        160.0
+      ],
+      "volM3": 1.56
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
   },
   {
-    "id": "A002",
-    "brand": "Cormach",
-    "name": "Smontagomme X (esempio)",
-    "code": "SM-535",
-    "pack": { "palletType": "FULL", "weightKg": 260, "dimsCm": [140, 110, 190] },
-    "rules": { "noSponda": true }
+    "id": "TOUCH-MEC-1000-P-SONAR",
+    "brand": "MEC",
+    "name": "TOUCH MEC 1000-P SONAR",
+    "code": "TOUCH MEC 1000-P SONAR",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 200.0,
+      "dimsCm": [
+        130.0,
+        75.0,
+        160.0
+      ],
+      "volM3": 1.56
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
   },
   {
-    "id": "A003",
+    "id": "TOUCH-MEC-2000S-P",
+    "brand": "MEC",
+    "name": "TOUCH MEC 2000S-P",
+    "code": "TOUCH MEC 2000S-P",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 200.0,
+      "dimsCm": [
+        130.0,
+        75.0,
+        160.0
+      ],
+      "volM3": 1.56
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-820VDL-SONAR",
+    "brand": "MEC",
+    "name": "MEC 820VDL SONAR",
+    "code": "MEC 820VDL SONAR",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 181.0,
+      "dimsCm": [
+        96.0,
+        69.0,
+        160.0
+      ],
+      "volM3": 1.05984
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-820VDL-P-SONAR",
+    "brand": "MEC",
+    "name": "MEC 820VDL-P SONAR",
+    "code": "MEC 820VDL-P SONAR",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 189.0,
+      "dimsCm": [
+        96.0,
+        69.0,
+        160.0
+      ],
+      "volM3": 1.05984
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-820-VDLL-c-cod-21100399-SOLL-AUTOMAT",
+    "brand": "MEC",
+    "name": "MEC 820 VDLL ( c/cod. 21100399 SOLL. AUTOMAT.)",
+    "code": "MEC 820 VDLL ( c/cod. 21100399 SOLL. AUTOMAT.)",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 238.0,
+      "dimsCm": [
+        160.0,
+        75.0,
+        153.0
+      ],
+      "volM3": 1.836
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-820-VDLL-P-SONAR-c-cod-21100399-SOLL-AUTOMAT",
+    "brand": "MEC",
+    "name": "MEC 820 VDLL-P SONAR ( c/cod. 21100399 SOLL. AUTOMAT.)",
+    "code": "MEC 820 VDLL-P SONAR ( c/cod. 21100399 SOLL. AUTOMAT.)",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 245.0,
+      "dimsCm": [
+        160.0,
+        75.0,
+        153.0
+      ],
+      "volM3": 1.836
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-810VD",
+    "brand": "MEC",
+    "name": "MEC 810VD",
+    "code": "MEC 810VD",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 142.0,
+      "dimsCm": [
+        96.0,
+        69.0,
+        160.0
+      ],
+      "volM3": 1.05984
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-810VDB-MEC-810VDBL",
+    "brand": "MEC",
+    "name": "MEC 810VDB / MEC 810VDBL",
+    "code": "MEC 810VDB / MEC 810VDBL",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 146.0,
+      "dimsCm": [
+        96.0,
+        69.0,
+        160.0
+      ],
+      "volM3": 1.05984
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-20-MEC-20L-SONAR",
+    "brand": "MEC",
+    "name": "MEC 20 / MEC 20L SONAR",
+    "code": "MEC 20 / MEC 20L SONAR",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 171.0,
+      "dimsCm": [
+        96.0,
+        80.0,
+        135.0
+      ],
+      "volM3": 1.0368
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-20L-P-SONAR",
+    "brand": "MEC",
+    "name": "MEC 20L-P SONAR",
+    "code": "MEC 20L-P SONAR",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 179.0,
+      "dimsCm": [
+        96.0,
+        80.0,
+        135.0
+      ],
+      "volM3": 1.0368
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-10",
+    "brand": "MEC",
+    "name": "MEC 10",
+    "code": "MEC 10",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 137.0,
+      "dimsCm": [
+        96.0,
+        69.0,
+        135.0
+      ],
+      "volM3": 0.89424
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-10BL",
+    "brand": "MEC",
+    "name": "MEC 10BL",
+    "code": "MEC 10BL",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 140.0,
+      "dimsCm": [
+        96.0,
+        80.0,
+        135.0
+      ],
+      "volM3": 1.0368
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-5",
+    "brand": "MEC",
+    "name": "MEC 5",
+    "code": "MEC 5",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 137.0,
+      "dimsCm": [
+        96.0,
+        80.0,
+        135.0
+      ],
+      "volM3": 1.0368
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-1-MEC-1-BAT",
+    "brand": "MEC",
+    "name": "MEC 1 / MEC 1 BAT",
+    "code": "MEC 1 / MEC 1 BAT",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 90.0,
+      "dimsCm": [
+        96.0,
+        80.0,
+        135.0
+      ],
+      "volM3": 1.0368
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "SOLLEVATORE-MANUALE-cod-21100397",
+    "brand": "",
+    "name": "SOLLEVATORE MANUALE cod. 21100397",
+    "code": "SOLLEVATORE MANUALE cod. 21100397",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 65.0,
+      "dimsCm": [
+        110.0,
+        60.0,
+        50.0
+      ],
+      "volM3": 0.33
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "MOTO-MEC",
+    "brand": "MEC",
+    "name": "MOTO MEC",
+    "code": "MOTO MEC",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 90.0,
+      "dimsCm": [
+        96.0,
+        80.0,
+        135.0
+      ],
+      "volM3": 1.0368
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "BENCH-MOTO-MEC",
+    "brand": "MEC",
+    "name": "BENCH MOTO MEC",
+    "code": "BENCH MOTO MEC",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 45.0,
+      "dimsCm": [
+        73.0,
+        52.0,
+        55.0
+      ],
+      "volM3": 0.20878
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-200-TRUCK-MEC-200A-TRUCK",
+    "brand": "MEC",
+    "name": "MEC 200 TRUCK / MEC 200A TRUCK",
+    "code": "MEC 200 TRUCK / MEC 200A TRUCK",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 281.0,
+      "dimsCm": [
+        160.0,
+        75.0,
+        153.0
+      ],
+      "volM3": 1.836
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "MEC-200-C-TRUCK-MEC-200A-C-TRUCK",
+    "brand": "MEC",
+    "name": "MEC 200-C TRUCK / MEC 200A-C TRUCK",
+    "code": "MEC 200-C TRUCK / MEC 200A-C TRUCK",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 291.0,
+      "dimsCm": [
+        160.0,
+        75.0,
+        153.0
+      ],
+      "volM3": 1.836
+    },
+    "rules": {},
+    "tags": [
+      "mec"
+    ]
+  },
+  {
+    "id": "CM-1200BB",
+    "brand": "",
+    "name": "CM 1200BB",
+    "code": "CM 1200BB",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 412.0,
+      "dimsCm": [
+        115.0,
+        120.0,
+        185.0
+      ],
+      "volM3": 2.553
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "PUMA",
+    "brand": "",
+    "name": "PUMA",
+    "code": "PUMA",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 338.0,
+      "dimsCm": [
+        130.0,
+        76.0,
+        180.0
+      ],
+      "volM3": 1.7784
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "PUMA-PREMITALLONE",
+    "brand": "",
+    "name": "PUMA + PREMITALLONE",
+    "code": "PUMA + PREMITALLONE",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 362.0,
+      "dimsCm": [
+        132.0,
+        106.0,
+        195.0
+      ],
+      "volM3": 2.72844
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "LIGRO",
+    "brand": "",
+    "name": "LIGRO",
+    "code": "LIGRO",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 265.0,
+      "dimsCm": [
+        120.0,
+        94.0,
+        193.0
+      ],
+      "volM3": 2.17704
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "LIGRO-GT",
+    "brand": "",
+    "name": "LIGRO GT",
+    "code": "LIGRO GT",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 279.0,
+      "dimsCm": [
+        125.0,
+        95.0,
+        190.0
+      ],
+      "volM3": 2.25625
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-536S-GT-RACING",
+    "brand": "",
+    "name": "F 536S GT RACING",
+    "code": "F 536S GT RACING",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 329.0,
+      "dimsCm": [
+        100.0,
+        115.0,
+        190.0
+      ],
+      "volM3": 2.185
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-536S-GT-RACING-BRACCIO",
+    "brand": "",
+    "name": "F 536S GT RACING + BRACCIO",
+    "code": "F 536S GT RACING + BRACCIO",
+    "pack": {
+      "palletType": "FULL",
+      "dimsCm": [
+        110.0,
+        115.0,
+        190.0
+      ],
+      "volM3": 2.4035
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-528S-GT",
+    "brand": "",
+    "name": "F 528S GT",
+    "code": "F 528S GT",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 252.0,
+      "dimsCm": [
+        110.0,
+        115.0,
+        190.0
+      ],
+      "volM3": 2.4035
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-535-S",
+    "brand": "",
+    "name": "F 535 S",
+    "code": "F 535 S",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 249.0,
+      "dimsCm": [
+        110.0,
+        90.0,
+        175.0
+      ],
+      "volM3": 1.7325
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-535S-BRACCIO",
+    "brand": "",
+    "name": "F 535S + BRACCIO",
+    "code": "F 535S + BRACCIO",
+    "pack": {
+      "palletType": "MEDIUM",
+      "dimsCm": [
+        110.0,
+        90.0,
+        175.0
+      ],
+      "volM3": 1.7325
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-535S-GT",
+    "brand": "",
+    "name": "F 535S GT",
+    "code": "F 535S GT",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 260.0,
+      "dimsCm": [
+        140.0,
+        92.0,
+        175.0
+      ],
+      "volM3": 2.254
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-535S-GT-BRACCIO",
+    "brand": "",
+    "name": "F 535S GT + BRACCIO",
+    "code": "F 535S GT + BRACCIO",
+    "pack": {
+      "palletType": "MEDIUM",
+      "dimsCm": [
+        135.0,
+        90.0,
+        170.0
+      ],
+      "volM3": 2.0655
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-535S-GT-LEVERLESS",
+    "brand": "",
+    "name": "F 535S GT LEVERLESS",
+    "code": "F 535S GT LEVERLESS",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 272.0,
+      "dimsCm": [
+        140.0,
+        92.0,
+        175.0
+      ],
+      "volM3": 2.254
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-535S-GT-LEVERLESS-BRACCIO",
+    "brand": "",
+    "name": "F 535S GT LEVERLESS + BRACCIO",
+    "code": "F 535S GT LEVERLESS + BRACCIO",
+    "pack": {
+      "palletType": "MEDIUM",
+      "dimsCm": [
+        135.0,
+        90.0,
+        170.0
+      ],
+      "volM3": 2.0655
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-524S",
+    "brand": "",
+    "name": "F 524S",
+    "code": "F 524S",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 222.0,
+      "dimsCm": [
+        97.0,
+        75.0,
+        163.0
+      ],
+      "volM3": 1.185825
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-524S-MULTI-SYSTEM",
+    "brand": "",
+    "name": "F 524S + MULTI SYSTEM",
+    "code": "F 524S + MULTI SYSTEM",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 303.0,
+      "dimsCm": [
+        105.0,
+        92.0,
+        171.0
+      ],
+      "volM3": 1.65186
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-524S-RF-SYSTEM",
+    "brand": "",
+    "name": "F 524S + RF SYSTEM",
+    "code": "F 524S + RF SYSTEM",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 313.0,
+      "dimsCm": [
+        105.0,
+        92.0,
+        171.0
+      ],
+      "volM3": 1.65186
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-524S-GT",
+    "brand": "",
+    "name": "F 524S GT",
+    "code": "F 524S GT",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 233.0,
+      "dimsCm": [
+        120.0,
+        85.0,
+        163.0
+      ],
+      "volM3": 1.6626
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-524S-GT-RF-SYSTEM",
+    "brand": "",
+    "name": "F 524S GT + RF SYSTEM",
+    "code": "F 524S GT + RF SYSTEM",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 324.0,
+      "dimsCm": [
+        120.0,
+        85.0,
+        163.0
+      ],
+      "volM3": 1.6626
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-524SW",
+    "brand": "",
+    "name": "F 524SW",
+    "code": "F 524SW",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 202.0,
+      "dimsCm": [
+        96.0,
+        85.0,
+        158.0
+      ],
+      "volM3": 1.28928
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-26A-BIKE",
+    "brand": "",
+    "name": "F 26A BIKE",
+    "code": "F 26A BIKE",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 261.0,
+      "dimsCm": [
+        96.0,
+        75.0,
+        163.0
+      ],
+      "volM3": 1.1736
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-26A-BIKE-RF-SYSTEM",
+    "brand": "",
+    "name": "F 26A BIKE + RF SYSTEM",
+    "code": "F 26A BIKE + RF SYSTEM",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 352.0,
+      "dimsCm": [
+        105.0,
+        85.0,
+        168.0
+      ],
+      "volM3": 1.4994
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-24-BIKE",
+    "brand": "",
+    "name": "F 24 BIKE",
+    "code": "F 24 BIKE",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 184.0,
+      "dimsCm": [
+        97.0,
+        75.0,
+        91.0
+      ],
+      "volM3": 0.662025
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "BASIC-22-BIKE",
+    "brand": "",
+    "name": "BASIC 22 BIKE",
+    "code": "BASIC 22 BIKE",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 192.0,
+      "dimsCm": [
+        108.0,
+        76.0,
+        165.0
+      ],
+      "volM3": 1.35432
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "BASIC-124",
+    "brand": "",
+    "name": "BASIC 124",
+    "code": "BASIC 124",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 203.0,
+      "dimsCm": [
+        112.0,
+        90.0,
+        170.0
+      ],
+      "volM3": 1.7136
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "BASIC-224",
+    "brand": "",
+    "name": "BASIC 224",
+    "code": "BASIC 224",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 261.0,
+      "dimsCm": [
+        115.0,
+        87.0,
+        163.0
+      ],
+      "volM3": 1.630815
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "BASIC-224-HELPER",
+    "brand": "",
+    "name": "BASIC 224 + HELPER",
+    "code": "BASIC 224 + HELPER",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 320.0,
+      "dimsCm": [
+        115.0,
+        87.0,
+        175.0
+      ],
+      "volM3": 1.750875
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-470S-GT",
+    "brand": "",
+    "name": "F 470S GT",
+    "code": "F 470S GT",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 301.0,
+      "dimsCm": [
+        130.0,
+        97.0,
+        180.0
+      ],
+      "volM3": 2.2698
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "F-470S-GT-RF-SYSTEM",
+    "brand": "",
+    "name": "F 470S GT + RF SYSTEM",
+    "code": "F 470S GT + RF SYSTEM",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 395.0,
+      "dimsCm": [
+        130.0,
+        97.0,
+        180.0
+      ],
+      "volM3": 2.2698
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "MULTI-SYSTEM",
+    "brand": "",
+    "name": "MULTI SYSTEM",
+    "code": "MULTI SYSTEM",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 93.0,
+      "dimsCm": [
+        141.0,
+        38.0,
+        44.0
+      ],
+      "volM3": 0.235752
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "RF-SYSTEM",
+    "brand": "",
+    "name": "RF SYSTEM",
+    "code": "RF SYSTEM",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 103.0,
+      "dimsCm": [
+        125.0,
+        50.0,
+        40.0
+      ],
+      "volM3": 0.25
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "BASIC-HELPER-ARM",
+    "brand": "",
+    "name": "BASIC HELPER ARM",
+    "code": "BASIC HELPER ARM",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 83.0,
+      "dimsCm": [
+        132.0,
+        42.0,
+        45.0
+      ],
+      "volM3": 0.24948
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "ELHA-SX",
+    "brand": "",
+    "name": "ELHA SX",
+    "code": "ELHA SX",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 40.0,
+      "dimsCm": [
+        77.0,
+        29.0,
+        24.0
+      ],
+      "volM3": 0.053592
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "ERHA-DX",
+    "brand": "",
+    "name": "ERHA DX",
+    "code": "ERHA DX",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 18.0,
+      "dimsCm": [
+        75.0,
+        24.0,
+        20.0
+      ],
+      "volM3": 0.036
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SX-PLUS-SYSTEM",
+    "brand": "",
+    "name": "SX PLUS SYSTEM",
+    "code": "SX PLUS SYSTEM",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 75.0,
+      "dimsCm": [
+        100.0,
+        37.0,
+        32.0
+      ],
+      "volM3": 0.1184
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "PREMITALLONE",
+    "brand": "",
+    "name": "PREMITALLONE",
+    "code": "PREMITALLONE",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 25.0,
+      "dimsCm": [
+        76.0,
+        56.0,
+        30.0
+      ],
+      "volM3": 0.12768
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SERBATOIO-GT",
+    "brand": "",
+    "name": "SERBATOIO GT",
+    "code": "SERBATOIO GT",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 10.0,
+      "dimsCm": [
+        62.0,
+        30.0,
+        30.0
+      ],
+      "volM3": 0.0558
+    },
+    "rules": {
+      "suggestGLS": true,
+      "suggestGLSReason": "Nota: usare GLS"
+    },
+    "tags": [],
+    "note": "spedizione GLS"
+  },
+  {
+    "id": "PEDANA-PNEUMATICA-DI-SOLLEVAMENTO-cod-20100297",
+    "brand": "",
+    "name": "PEDANA PNEUMATICA DI SOLLEVAMENTO cod. 20100297",
+    "code": "PEDANA PNEUMATICA DI SOLLEVAMENTO cod. 20100297",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 44.0,
+      "dimsCm": [
+        85.0,
+        65.0,
+        35.0
+      ],
+      "volM3": 0.193375
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "PEDANA-PNEUMATICA-DI-SOLLEVAMENTO-cod-20100288",
+    "brand": "",
+    "name": "PEDANA PNEUMATICA DI SOLLEVAMENTO cod. 20100288",
+    "code": "PEDANA PNEUMATICA DI SOLLEVAMENTO cod. 20100288",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 30.0,
+      "dimsCm": [
+        95.0,
+        60.0,
+        45.0
+      ],
+      "volM3": 0.2565
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "FT-600-HY",
+    "brand": "",
+    "name": "FT 600 HY",
+    "code": "FT 600 HY",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 2460.0,
+      "dimsCm": [
+        299.0,
+        229.0,
+        133.0
+      ],
+      "volM3": 9.106643
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "SUPER-VIGOR-60",
+    "brand": "",
+    "name": "SUPER VIGOR 60",
+    "code": "SUPER VIGOR 60",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 1480.0,
+      "dimsCm": [
+        240.0,
+        220.0,
+        130.0
+      ],
+      "volM3": 6.864
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "SUPER-VIGOR-2450N",
+    "brand": "",
+    "name": "SUPER VIGOR 2450N",
+    "code": "SUPER VIGOR 2450N",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 1220.0,
+      "dimsCm": [
+        230.0,
+        190.0,
+        105.0
+      ],
+      "volM3": 4.5885
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "CM-SUPER-56N",
+    "brand": "",
+    "name": "CM SUPER 56N",
+    "code": "CM SUPER 56N",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 770.0,
+      "dimsCm": [
+        190.0,
+        150.0,
+        108.0
+      ],
+      "volM3": 3.078
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "FT-560-SN",
+    "brand": "",
+    "name": "FT 560 SN",
+    "code": "FT 560 SN",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 740.0,
+      "dimsCm": [
+        210.0,
+        170.0,
+        85.0
+      ],
+      "volM3": 3.0345
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "CM-SUPER-27",
+    "brand": "",
+    "name": "CM SUPER 27''",
+    "code": "CM SUPER 27''",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 580.0,
+      "dimsCm": [
+        148.0,
+        140.0,
+        102.0
+      ],
+      "volM3": 2.11344
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "FT-26-SN",
+    "brand": "",
+    "name": "FT 26 SN",
+    "code": "FT 26 SN",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 596.0,
+      "dimsCm": [
+        220.0,
+        170.0,
+        110.0
+      ],
+      "volM3": 4.114
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "TMS-26",
+    "brand": "",
+    "name": "TMS 26",
+    "code": "TMS 26",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 462.0,
+      "dimsCm": [
+        110.0,
+        116.0,
+        140.0
+      ],
+      "volM3": 1.7864
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "GENERATORE-TMS-26",
+    "brand": "",
+    "name": "GENERATORE TMS 26",
+    "code": "GENERATORE TMS 26",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 450.0,
+      "dimsCm": [
+        130.0,
+        130.0,
+        180.0
+      ],
+      "volM3": 3.042
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "KIT-VETTURA-TMS-26-cod-20100380",
+    "brand": "",
+    "name": "KIT VETTURA TMS 26 cod. 20100380",
+    "code": "KIT VETTURA TMS 26 cod. 20100380",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 28.0,
+      "dimsCm": [
+        70.0,
+        40.0,
+        36.0
+      ],
+      "volM3": 0.1008
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "MTB",
+    "brand": "",
+    "name": "MTB",
+    "code": "MTB",
+    "pack": {
+      "volM3": 0.0
+    },
+    "rules": {},
+    "tags": [],
+    "note": "dimensioni d'imballo mai pervenute"
+  },
+  {
+    "id": "WL-85-MOVE",
+    "brand": "",
+    "name": "WL 85 MOVE",
+    "code": "WL 85 MOVE",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 815.0,
+      "dimsCm": [
+        115.0,
+        145.0,
+        248.0
+      ],
+      "volM3": 4.1354
+    },
+    "rules": {
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "OK SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "SET-4-CAVALLETTI-cod-25100306",
+    "brand": "",
+    "name": "SET 4 CAVALLETTI cod. 25100306",
+    "code": "SET 4 CAVALLETTI cod. 25100306",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 395.0,
+      "dimsCm": [
+        154.0,
+        113.0,
+        72.0
+      ],
+      "volM3": 1.252944
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "PFA-40",
+    "brand": "",
+    "name": "PFA 40",
+    "code": "PFA 40",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 2540.0,
+      "dimsCm": [
+        480.0,
+        60.0,
+        34.0
+      ],
+      "volM3": 0.9792
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA\nGROUPAGE 5 MT / quotazione"
+  },
+  {
+    "id": "PFA-50",
+    "brand": "",
+    "name": "PFA 50",
+    "code": "PFA 50",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 2630.0,
+      "dimsCm": [
+        520.0,
+        60.0,
+        34.0
+      ],
+      "volM3": 1.0608
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA\nGROUPAGE 6 MT / quotazione"
+  },
+  {
+    "id": "L-3400",
+    "brand": "",
+    "name": "L 3400",
+    "code": "L 3400",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 1071.0,
+      "dimsCm": [
+        170.0,
+        85.0,
+        105.0
+      ],
+      "volM3": 1.51725
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "L-3500-EVO",
+    "brand": "",
+    "name": "L 3500 EVO",
+    "code": "L 3500 EVO",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 1070.0,
+      "dimsCm": [
+        168.0,
+        80.0,
+        100.0
+      ],
+      "volM3": 1.344
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "L-3300-L-3300-EVO",
+    "brand": "",
+    "name": "L 3300 / L 3300 EVO",
+    "code": "L 3300 / L 3300 EVO",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 731.0,
+      "dimsCm": [
+        160.0,
+        80.0,
+        100.0
+      ],
+      "volM3": 1.28
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "L-3100",
+    "brand": "",
+    "name": "L 3100",
+    "code": "L 3100",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 605.0,
+      "dimsCm": [
+        160.0,
+        80.0,
+        110.0
+      ],
+      "volM3": 1.408
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "L-1500A",
+    "brand": "",
+    "name": "L 1500A",
+    "code": "L 1500A",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 700.0,
+      "dimsCm": [
+        210.0,
+        107.0,
+        86.0
+      ],
+      "volM3": 1.93242
+    },
+    "rules": {
+      "noSponda": true
+    },
+    "tags": [],
+    "note": "NO SPONDA"
+  },
+  {
+    "id": "L-96-PE-BIKE-POMPA-A-PEDALE",
+    "brand": "",
+    "name": "L 96 PE BIKE POMPA A PEDALE",
+    "code": "L 96 PE BIKE POMPA A PEDALE",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 165.0,
+      "dimsCm": [
+        220.0,
+        75.0,
+        30.0
+      ],
+      "volM3": 0.495
+    },
+    "rules": {
+      "noSponda": true
+    },
+    "tags": [],
+    "note": "NO SPONDA"
+  },
+  {
+    "id": "L-96-EL-BIKE-CENTRALINA",
+    "brand": "",
+    "name": "L 96 EL BIKE CENTRALINA",
+    "code": "L 96 EL BIKE CENTRALINA",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 165.0,
+      "dimsCm": [
+        220.0,
+        75.0,
+        30.0
+      ],
+      "volM3": 0.495
+    },
+    "rules": {
+      "noSponda": true
+    },
+    "tags": [],
+    "note": "NO SPONDA"
+  },
+  {
+    "id": "KIT-4-RAMPE-RIBASSATE-cod-25100289",
+    "brand": "",
+    "name": "KIT 4 RAMPE RIBASSATE cod. 25100289",
+    "code": "KIT 4 RAMPE RIBASSATE cod. 25100289",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 127.0,
+      "dimsCm": [
+        110.0,
+        78.0,
+        40.0
+      ],
+      "volM3": 0.3432
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "TRAVERA-DI-SOLLEVAMENTO-cod-25100288",
+    "brand": "",
+    "name": "TRAVERA DI SOLLEVAMENTO cod. 25100288",
+    "code": "TRAVERA DI SOLLEVAMENTO cod. 25100288",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 72.0,
+      "dimsCm": [
+        165.0,
+        50.0,
+        44.0
+      ],
+      "volM3": 0.363
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "JB-25-TRAVERSA-PER-PFA-cod-25100290",
+    "brand": "",
+    "name": "JB 25 TRAVERSA PER PFA cod. 25100290",
+    "code": "JB 25 TRAVERSA PER PFA cod. 25100290",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 145.0,
+      "dimsCm": [
+        85.0,
+        60.0,
+        32.0
+      ],
+      "volM3": 0.1632
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "TELAIO-L3300EVO-ZB-cod-41200903Z31",
+    "brand": "",
+    "name": "TELAIO L3300EVO ZB cod. 41200903Z31",
+    "code": "TELAIO L3300EVO ZB cod. 41200903Z31",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 54.0,
+      "dimsCm": [
+        80.0,
+        60.0,
+        40.0
+      ],
+      "volM3": 0.192
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "L-40",
+    "brand": "",
+    "name": "L 40",
+    "code": "L 40",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 625.0,
+      "dimsCm": [
+        290.0,
+        50.0,
+        100.0
+      ],
+      "volM3": 1.45
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "L-45",
+    "brand": "",
+    "name": "L 45",
+    "code": "L 45",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 750.0,
+      "dimsCm": [
+        380.0,
+        50.0,
+        100.0
+      ],
+      "volM3": 1.9
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 4 MT / quotazione"
+  },
+  {
+    "id": "KIT-ESTENSIONE-cod-25100303",
+    "brand": "",
+    "name": "KIT ESTENSIONE cod. 25100303",
+    "code": "KIT ESTENSIONE cod. 25100303",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 95.0,
+      "dimsCm": [
+        134.0,
+        50.0,
+        40.0
+      ],
+      "volM3": 0.268
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "POMPA-EMERGENZA-cod-25200341",
+    "brand": "",
+    "name": "POMPA EMERGENZA cod. 25200341",
+    "code": "POMPA EMERGENZA cod. 25200341",
+    "pack": {
+      "palletType": "QUARTER",
+      "weightKg": 0.5,
+      "dimsCm": [
+        44.0,
+        27.0,
+        23.0
+      ],
+      "volM3": 0.027324
+    },
+    "rules": {
+      "suggestGLS": true,
+      "suggestGLSReason": "Nota: usare GLS"
+    },
+    "tags": [],
+    "note": "spedizione GLS"
+  },
+  {
+    "id": "ALPHA-40-cod-05100357",
+    "brand": "",
+    "name": "ALPHA 40 cod. 05100357",
+    "code": "ALPHA 40 cod. 05100357",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 626.0,
+      "dimsCm": [
+        287.0,
+        45.0,
+        77.0
+      ],
+      "volM3": 0.994455
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "SIGMA-300E-cod-05100381",
+    "brand": "",
+    "name": "SIGMA 300E cod. 05100381",
+    "code": "SIGMA 300E cod. 05100381",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 850.0,
+      "dimsCm": [
+        170.0,
+        80.0,
+        85.0
+      ],
+      "volM3": 1.156
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "L-3500N-EVO-cod-05100382",
+    "brand": "",
+    "name": "L 3500N EVO cod. 05100382",
+    "code": "L 3500N EVO cod. 05100382",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 950.0,
+      "dimsCm": [
+        170.0,
+        80.0,
+        85.0
+      ],
+      "volM3": 1.156
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "AL-55-cod-05100383",
+    "brand": "",
+    "name": "AL 55 cod. 05100383",
+    "code": "AL 55 cod. 05100383",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 1072.0,
+      "dimsCm": [
+        410.0,
+        120.0,
+        70.0
+      ],
+      "volM3": 3.444
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 5 MT / quotazione"
+  },
+  {
+    "id": "WR-328A-ACCESSORI-WR-328A",
+    "brand": "",
+    "name": "WR 328A ACCESSORI WR 328A",
+    "code": "WR 328A ACCESSORI WR 328A",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 92.0,
+      "dimsCm": [
+        96.0,
+        69.0,
+        133.0
+      ],
+      "volM3": 0.880992
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "GEO-10-ACCESSORI-GEO-10",
+    "brand": "",
+    "name": "GEO 10 ACCESSORI GEO 10",
+    "code": "GEO 10 ACCESSORI GEO 10",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 96.0,
+      "dimsCm": [
+        96.0,
+        69.0,
+        133.0
+      ],
+      "volM3": 0.880992
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "TARATORE-GEO-10",
+    "brand": "",
+    "name": "TARATORE GEO 10",
+    "code": "TARATORE GEO 10",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 30.0,
+      "dimsCm": [
+        76.0,
+        54.0,
+        107.0
+      ],
+      "volM3": 0.439128
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "GEO-20-ACCESSORI-ACCESSORI",
+    "brand": "",
+    "name": "GEO 20 ACCESSORI ACCESSORI",
+    "code": "GEO 20 ACCESSORI ACCESSORI",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 120.0,
+      "dimsCm": [
+        289.0,
+        72.0,
+        48.0
+      ],
+      "volM3": 0.998784
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "KIT-SALI-SCENDI-GEO-20-cod-23100411",
+    "brand": "",
+    "name": "KIT SALI/SCENDI GEO 20 cod. 23100411",
+    "code": "KIT SALI/SCENDI GEO 20 cod. 23100411",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 40.0,
+      "dimsCm": [
+        265.0,
+        30.0,
+        30.0
+      ],
+      "volM3": 0.2385
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "GEO-15",
+    "brand": "",
+    "name": "GEO 15",
+    "code": "GEO 15",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 50.0,
+      "dimsCm": [
+        284.0,
+        40.0,
+        27.0
+      ],
+      "volM3": 0.30672
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "KIT-SALI-SCENDI-GEO-15-cod-23100385",
+    "brand": "",
+    "name": "KIT SALI/SCENDI GEO 15 cod. 23100385",
+    "code": "KIT SALI/SCENDI GEO 15 cod. 23100385",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 25.0,
+      "dimsCm": [
+        202.0,
+        24.0,
+        20.0
+      ],
+      "volM3": 0.09696
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "TARATORE-GEO-15",
+    "brand": "",
+    "name": "TARATORE GEO 15",
+    "code": "TARATORE GEO 15",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 30.0,
+      "dimsCm": [
+        73.0,
+        54.0,
+        107.0
+      ],
+      "volM3": 0.421794
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "KIT-INTEGRAZIONE-TARATORE-GEO-15",
+    "brand": "",
+    "name": "KIT INTEGRAZIONE TARATORE GEO 15",
+    "code": "KIT INTEGRAZIONE TARATORE GEO 15",
+    "pack": {
+      "palletType": "QUARTER",
+      "weightKg": 6.0,
+      "dimsCm": [
+        34.0,
+        34.0,
+        37.0
+      ],
+      "volM3": 0.042772
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "TARGET-GEO-15",
+    "brand": "",
+    "name": "TARGET GEO 15",
+    "code": "TARGET GEO 15",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 64.0,
+      "dimsCm": [
+        120.0,
+        80.0,
+        48.0
+      ],
+      "volM3": 0.4608
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "TARGET-ANTERIORE-GEO-15-cod-23200278",
+    "brand": "",
+    "name": "TARGET ANTERIORE GEO 15 cod. 23200278",
+    "code": "TARGET ANTERIORE GEO 15 cod. 23200278",
+    "pack": {
+      "palletType": "QUARTER",
+      "weightKg": 2.5,
+      "dimsCm": [
+        40.0,
+        40.0,
+        20.0
+      ],
+      "volM3": 0.032
+    },
+    "rules": {
+      "suggestGLS": true,
+      "suggestGLSReason": "Nota: usare GLS"
+    },
+    "tags": [],
+    "note": "spedizione GLS"
+  },
+  {
+    "id": "SCM-230",
+    "brand": "",
+    "name": "SCM 230",
+    "code": "SCM 230",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 59.0,
+      "dimsCm": [
+        135.0,
+        40.0,
+        40.0
+      ],
+      "volM3": 0.216
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SCM-3",
+    "brand": "",
+    "name": "SCM 3",
+    "code": "SCM 3",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 97.0,
+      "dimsCm": [
+        135.0,
+        40.0,
+        40.0
+      ],
+      "volM3": 0.216
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SCM-4EB",
+    "brand": "",
+    "name": "SCM 4EB",
+    "code": "SCM 4EB",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 114.0,
+      "dimsCm": [
+        135.0,
+        40.0,
+        40.0
+      ],
+      "volM3": 0.216
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SCM-476",
+    "brand": "",
+    "name": "SCM 476",
+    "code": "SCM 476",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 114.0,
+      "dimsCm": [
+        135.0,
+        40.0,
+        40.0
+      ],
+      "volM3": 0.216
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SCM-9",
+    "brand": "",
+    "name": "SCM 9",
+    "code": "SCM 9",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 85.0,
+      "dimsCm": [
+        140.0,
+        40.0,
+        50.0
+      ],
+      "volM3": 0.28
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SOLLEVATORE-OLEOPNEUMATICO-OPJ30-cod-06100092",
+    "brand": "",
+    "name": "SOLLEVATORE OLEOPNEUMATICO OPJ30 cod. 06100092",
+    "code": "SOLLEVATORE OLEOPNEUMATICO OPJ30 cod. 06100092",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 50.0,
+      "dimsCm": [
+        140.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.448
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SOLLEVATORE-OLEOPNEUMATICO-OPJ40-cod-06100093",
+    "brand": "",
+    "name": "SOLLEVATORE OLEOPNEUMATICO OPJ40 cod. 06100093",
+    "code": "SOLLEVATORE OLEOPNEUMATICO OPJ40 cod. 06100093",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 65.0,
+      "dimsCm": [
+        140.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.448
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SOLLEVATORE-OLEOPNEUMATICO-OPJ50-cod-06100094",
+    "brand": "",
+    "name": "SOLLEVATORE OLEOPNEUMATICO OPJ50 cod. 06100094",
+    "code": "SOLLEVATORE OLEOPNEUMATICO OPJ50 cod. 06100094",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 70.0,
+      "dimsCm": [
+        140.0,
+        80.0,
+        45.0
+      ],
+      "volM3": 0.504
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SOLLEVATORE-OLEOPNEUMATICO-OPJ60-cod-06100095",
+    "brand": "",
+    "name": "SOLLEVATORE OLEOPNEUMATICO OPJ60 cod. 06100095",
+    "code": "SOLLEVATORE OLEOPNEUMATICO OPJ60 cod. 06100095",
+    "pack": {
+      "palletType": "MEDIUM",
+      "weightKg": 85.0,
+      "dimsCm": [
+        140.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.448
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SOLLEVATORE-PNEUM-MOBILE-TJ2-cod-06200038",
+    "brand": "",
+    "name": "SOLLEVATORE PNEUM. MOBILE TJ2 cod. 06200038",
+    "code": "SOLLEVATORE PNEUM. MOBILE TJ2 cod. 06200038",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 45.0,
+      "dimsCm": [
+        120.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.384
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SOLLEVATORE-PNEUM-MOBILE-TJ3N-cod-06200042",
+    "brand": "",
+    "name": "SOLLEVATORE PNEUM. MOBILE TJ3N cod. 06200042",
+    "code": "SOLLEVATORE PNEUM. MOBILE TJ3N cod. 06200042",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 53.0,
+      "dimsCm": [
+        120.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.384
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SOLLEVATORE-PNEUM-MOBILE-TJ2-TEL-cod-06200041",
+    "brand": "",
+    "name": "SOLLEVATORE PNEUM. MOBILE TJ2-TEL cod. 06200041",
+    "code": "SOLLEVATORE PNEUM. MOBILE TJ2-TEL cod. 06200041",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 53.0,
+      "dimsCm": [
+        120.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.384
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "PRESSA-IDRAULICA-PS15-cod-10201046",
+    "brand": "",
+    "name": "PRESSA IDRAULICA PS15 cod. 10201046",
+    "code": "PRESSA IDRAULICA PS15 cod. 10201046",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 70.0,
+      "dimsCm": [
+        120.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.384
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "PRESSA-IDRAULICA-PS30-cod-10201047",
+    "brand": "",
+    "name": "PRESSA IDRAULICA PS30 cod. 10201047",
+    "code": "PRESSA IDRAULICA PS30 cod. 10201047",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 150.0,
+      "dimsCm": [
+        160.0,
+        80.0,
+        45.0
+      ],
+      "volM3": 0.576
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "PRESSA-IDRAULICA-PS50-cod-10201048",
+    "brand": "",
+    "name": "PRESSA IDRAULICA PS50 cod. 10201048",
+    "code": "PRESSA IDRAULICA PS50 cod. 10201048",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 275.5,
+      "dimsCm": [
+        183.0,
+        101.0,
+        40.0
+      ],
+      "volM3": 0.73932
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "GRU-IDRAULICA-A-CARRELLO-GC10-cod-10201049",
+    "brand": "",
+    "name": "GRU IDRAULICA A CARRELLO GC10 cod. 10201049",
+    "code": "GRU IDRAULICA A CARRELLO GC10 cod. 10201049",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 117.0,
+      "dimsCm": [
+        160.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.512
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SOLLEVATORE-DA-FOSSA-SF-600-cod-10201050",
+    "brand": "",
+    "name": "SOLLEVATORE DA FOSSA SF 600 cod. 10201050",
+    "code": "SOLLEVATORE DA FOSSA SF 600 cod. 10201050",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 46.0,
+      "dimsCm": [
+        120.0,
+        80.0,
+        40.0
+      ],
+      "volM3": 0.384
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "HANDY-SCAN",
+    "brand": "",
+    "name": "HANDY SCAN",
+    "code": "HANDY SCAN",
+    "pack": {
+      "palletType": "QUARTER",
+      "weightKg": 1.5,
+      "dimsCm": [
+        40.0,
+        20.0,
+        25.0
+      ],
+      "volM3": 0.02
+    },
+    "rules": {
+      "suggestGLS": true,
+      "suggestGLSReason": "Nota: usare GLS"
+    },
+    "tags": [],
+    "note": "spedizione GLS"
+  },
+  {
+    "id": "BOOSTER-20LT",
+    "brand": "",
+    "name": "BOOSTER 20LT",
+    "code": "BOOSTER 20LT",
+    "pack": {
+      "palletType": "QUARTER",
+      "weightKg": 11.0,
+      "dimsCm": [
+        57.0,
+        30.0,
+        35.0
+      ],
+      "volM3": 0.05985
+    },
+    "rules": {
+      "suggestGLS": true,
+      "suggestGLSReason": "Nota: usare GLS"
+    },
+    "tags": [],
+    "note": "spedizione GLS"
+  },
+  {
+    "id": "BOOSTER-40LT",
+    "brand": "",
+    "name": "BOOSTER 40LT",
+    "code": "BOOSTER 40LT",
+    "pack": {
+      "palletType": "HALF",
+      "weightKg": 21.0,
+      "dimsCm": [
+        75.0,
+        38.0,
+        50.0
+      ],
+      "volM3": 0.1425
+    },
+    "rules": {
+      "suggestGLS": true,
+      "suggestGLSReason": "Nota: usare GLS"
+    },
+    "tags": [],
+    "note": "spedizione GLS"
+  },
+  {
+    "id": "SECURE-CAGE-montata",
+    "brand": "",
+    "name": "SECURE CAGE *montata",
+    "code": "SECURE CAGE *montata",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 190.0,
+      "dimsCm": [
+        160.0,
+        80.0,
+        170.0
+      ],
+      "volM3": 2.176
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "GE-23-GONFIATORE-ELETTRONICO",
+    "brand": "",
+    "name": "GE 23 GONFIATORE ELETTRONICO",
+    "code": "GE 23 GONFIATORE ELETTRONICO",
+    "pack": {
+      "palletType": "QUARTER",
+      "weightKg": 8.0,
+      "dimsCm": [
+        31.0,
+        30.0,
+        22.0
+      ],
+      "volM3": 0.02046
+    },
+    "rules": {
+      "suggestGLS": true,
+      "suggestGLSReason": "Nota: usare GLS"
+    },
+    "tags": [],
+    "note": "spedizione GLS"
+  },
+  {
+    "id": "ART-2019-K",
+    "brand": "",
+    "name": "ART 2019/K",
+    "code": "ART 2019/K",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 42.0,
+      "dimsCm": [
+        173.0,
+        65.0,
+        50.0
+      ],
+      "volM3": 0.56225
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "NIC-20",
+    "brand": "",
+    "name": "NIC 20",
+    "code": "NIC 20",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 97.0,
+      "dimsCm": [
+        68.0,
+        72.0,
+        163.0
+      ],
+      "volM3": 0.798048
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "NIL-50",
+    "brand": "",
+    "name": "NIL 50",
+    "code": "NIL 50",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 99.0,
+      "dimsCm": [
+        68.0,
+        72.0,
+        163.0
+      ],
+      "volM3": 0.798048
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "NIT-18",
+    "brand": "",
+    "name": "NIT 18",
+    "code": "NIT 18",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 70.0,
+      "dimsCm": [
+        65.0,
+        74.0,
+        158.0
+      ],
+      "volM3": 0.75998
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SA-1200",
+    "brand": "",
+    "name": "SA 1200",
+    "code": "SA 1200",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 70.0,
+      "dimsCm": [
+        75.0,
+        75.0,
+        180.0
+      ],
+      "volM3": 1.0125
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "SA-2500",
+    "brand": "",
+    "name": "SA 2500",
+    "code": "SA 2500",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 71.0,
+      "dimsCm": [
+        75.0,
+        75.0,
+        180.0
+      ],
+      "volM3": 1.0125
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "VL-22-VASCA-D-ISPEZIONE-cod-10100031",
+    "brand": "",
+    "name": "VL 22 VASCA D'ISPEZIONE cod. 10100031",
+    "code": "VL 22 VASCA D'ISPEZIONE cod. 10100031",
+    "pack": {
+      "palletType": "FULL",
+      "weightKg": 290.0,
+      "dimsCm": [
+        150.0,
+        95.0,
+        125.0
+      ],
+      "volM3": 1.78125
+    },
+    "rules": {},
+    "tags": []
+  },
+  {
+    "id": "13120E",
     "brand": "CASCOS",
-    "name": "Accessorio piccolo (esempio)",
-    "code": "ACC-GLS-01",
-    "pack": { "palletType": "MINI", "weightKg": 8, "dimsCm": [40, 30, 25] },
-    "rules": { "suggestGLS": true, "suggestGLSReason": "collo piccolo → GLS consigliato" }
+    "name": "C 3.2",
+    "code": "13120E",
+    "pack": {
+      "weightKg": 500.0,
+      "dimsCm": [
+        251.0,
+        null,
+        null
+      ],
+      "volM3": 0.975386
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
   },
   {
-    "id": "A004",
-    "brand": "—",
-    "name": "Articolo che richiede preventivo",
-    "code": "QUOTE-01",
-    "pack": { "palletType": "FULL", "weightKg": 500, "dimsCm": [300, 120, 220] },
-    "rules": { "forceQuote": true, "forceQuoteReason": "NO SPONDA / misure fuori standard" }
+    "id": "13120SE",
+    "brand": "CASCOS",
+    "name": "C 3.2S",
+    "code": "13120SE",
+    "pack": {
+      "weightKg": 577.0,
+      "dimsCm": [
+        251.0,
+        null,
+        null
+      ],
+      "volM3": 1.025837
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13168",
+    "brand": "CASCOS",
+    "name": "C 3.5",
+    "code": "13168",
+    "pack": {
+      "weightKg": 593.0,
+      "dimsCm": [
+        255.0,
+        null,
+        null
+      ],
+      "volM3": 1.14342
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 4 MT / quotazione"
+  },
+  {
+    "id": "13169",
+    "brand": "CASCOS",
+    "name": "C 3.5S",
+    "code": "13169",
+    "pack": {
+      "weightKg": 658.0,
+      "dimsCm": [
+        255.0,
+        null,
+        null
+      ],
+      "volM3": 1.14342
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13194",
+    "brand": "CASCOS",
+    "name": "C 4",
+    "code": "13194",
+    "pack": {
+      "weightKg": 673.0,
+      "dimsCm": [
+        255.0,
+        null,
+        null
+      ],
+      "volM3": 1.14342
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 4 MT / quotazione"
+  },
+  {
+    "id": "13198",
+    "brand": "CASCOS",
+    "name": "C 4 XL",
+    "code": "13198",
+    "pack": {
+      "weightKg": 673.0,
+      "dimsCm": [
+        255.0,
+        null,
+        null
+      ],
+      "volM3": 1.14342
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 4 MT / quotazione"
+  },
+  {
+    "id": "13194S",
+    "brand": "CASCOS",
+    "name": "C 4S",
+    "code": "13194S",
+    "pack": {
+      "weightKg": 738.0,
+      "dimsCm": [
+        255.0,
+        null,
+        null
+      ],
+      "volM3": 1.14342
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13198S",
+    "brand": "CASCOS",
+    "name": "C 4S XL",
+    "code": "13198S",
+    "pack": {
+      "weightKg": 738.0,
+      "dimsCm": [
+        255.0,
+        null,
+        null
+      ],
+      "volM3": 1.14342
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA - GROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13988",
+    "brand": "CASCOS",
+    "name": "C 5",
+    "code": "13988",
+    "pack": {
+      "weightKg": 535.0,
+      "dimsCm": [
+        269.0,
+        null,
+        null
+      ],
+      "volM3": 1.556165
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13998",
+    "brand": "CASCOS",
+    "name": "C 5.5",
+    "code": "13998",
+    "pack": {
+      "weightKg": 535.0,
+      "dimsCm": [
+        269.0,
+        null,
+        null
+      ],
+      "volM3": 1.556165
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13988S",
+    "brand": "CASCOS",
+    "name": "C 5S",
+    "code": "13988S",
+    "pack": {
+      "weightKg": 535.0,
+      "dimsCm": [
+        269.0,
+        null,
+        null
+      ],
+      "volM3": 1.556165
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13998S",
+    "brand": "CASCOS",
+    "name": "C 5.5S",
+    "code": "13998S",
+    "pack": {
+      "weightKg": 535.0,
+      "dimsCm": [
+        269.0,
+        null,
+        null
+      ],
+      "volM3": 1.556165
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13167",
+    "brand": "CASCOS",
+    "name": "C 125",
+    "code": "13167",
+    "pack": {
+      "weightKg": 534.0,
+      "dimsCm": [
+        266.0,
+        null,
+        null
+      ],
+      "volM3": 1.45236
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 3 MT / quotazione"
+  },
+  {
+    "id": "13380",
+    "brand": "CASCOS",
+    "name": "C 445",
+    "code": "13380",
+    "pack": {
+      "weightKg": 505.0,
+      "dimsCm": [
+        318.0,
+        null,
+        null
+      ],
+      "volM3": 1.545162
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 5 MT / quotazione"
+  },
+  {
+    "id": "13359",
+    "brand": "CASCOS",
+    "name": "C 445 H",
+    "code": "13359",
+    "pack": {
+      "weightKg": 550.0,
+      "dimsCm": [
+        318.0,
+        null,
+        null
+      ],
+      "volM3": 1.545162
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 5 MT / quotazione"
+  },
+  {
+    "id": "C-450-XL",
+    "brand": "CASCOS",
+    "name": "C 450 XL",
+    "code": "C 450 XL",
+    "pack": {
+      "weightKg": 600.0,
+      "dimsCm": [
+        340.0,
+        null,
+        null
+      ],
+      "volM3": 1.7204
+    },
+    "rules": {
+      "noSponda": true,
+      "forceQuote": true,
+      "forceQuoteReason": "Nota: quotazione/preventivo"
+    },
+    "tags": [
+      "cascos"
+    ],
+    "note": "NO SPONDA\nGROUPAGE 6 MT / quotazione"
+  },
+  {
+    "id": "28650",
+    "brand": "CASCOS",
+    "name": "KIT EVA",
+    "code": "28650",
+    "pack": {
+      "weightKg": 211.0,
+      "dimsCm": [
+        123.0,
+        null,
+        null
+      ],
+      "volM3": 0.5289
+    },
+    "rules": {},
+    "tags": [
+      "cascos"
+    ]
   }
 ]
