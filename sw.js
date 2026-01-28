@@ -1,4 +1,4 @@
-const CACHE = "trasporti-pwa-v2"; // bump version when assets change
+const CACHE = "trasporti-pwa-v3"; // bump version when assets change
 
 const ASSETS = [
   "./",
