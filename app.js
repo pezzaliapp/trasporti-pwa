@@ -271,264 +271,49 @@ function onArticleChange(){
   // ✅ AUTO-FILL GROUPAGE da rules (es. groupageLm)
   const r = art.rules || {};
   if(UI.service?.value === "GROUPAGE"){
-    if(r.groupageLm != null && UI.lm && !isTouched(UI.lm)){
-      UI.lm.value = String(r.groupageLm);
+    // ✅ Opzione B: auto-compila i campi GROUPAGE SOLO se l’articolo lo richiede esplicitamente.
+    // Evita valori "fantasma" (es. LM=6) su articoli che normalmente viaggiano a Bancale.
+    const allowAuto =
+      !!r.groupageAutoFill ||
+      (r.groupageLm != null) ||
+      (r.groupageQuintali != null) ||
+      (r.groupagePalletCount != null);
+
+    if(!allowAuto){
+      if(UI.lm && !isTouched(UI.lm)) UI.lm.value = "0";
+      if(UI.quintali && !isTouched(UI.quintali)) UI.quintali.value = "0";
+      if(UI.palletCount && !isTouched(UI.palletCount)) UI.palletCount.value = "0";
+    } else {
+      if(r.groupageLm != null && UI.lm && !isTouched(UI.lm)){
+        UI.lm.value = String(r.groupageLm);
+      }
+
+      if(UI.quintali && !isTouched(UI.quintali)){
+        if(r.groupageQuintali != null){
+          UI.quintali.value = String(r.groupageQuintali);
+        } else if(pack.weightKg != null && !Number.isNaN(Number(pack.weightKg))){
+          UI.quintali.value = String(round2(Number(pack.weightKg) / 100));
+        }
+      }
+
+      if(UI.palletCount && !isTouched(UI.palletCount)){
+        if(r.groupagePalletCount != null){
+          UI.palletCount.value = String(r.groupagePalletCount);
+        } else if(pt){
+          UI.palletCount.value = "1";
+        }
+      }
     }
-    // se in futuro aggiungi: groupageQuintali / groupagePalletCount
-    if(r.groupageQuintali != null && UI.quintali && !isTouched(UI.quintali)){
-      UI.quintali.value = String(r.groupageQuintali);
+
+    // noSponda -> disabilita sponda
+    if(UI.optSponda){
+      if(r.noSponda){
+        UI.optSponda.checked = false;
+        UI.optSponda.disabled = true;
+      } else {
+        UI.optSponda.disabled = false;
+      }
     }
-    if(r.groupagePalletCount != null && UI.palletCount && !isTouched(UI.palletCount)){
-      UI.palletCount.value = String(r.groupagePalletCount);
-    }
-  }
-
-  // ✅ forza servizio PALLET se stai su GLS o se service è vuoto
-  if(UI.service){
-    if(!UI.service.value || UI.service.value === "GLS"){
-      UI.service.value = "PALLET";
-      applyServiceUI();
-    }
-  }
-}
-
-/* -------------------- CALCOLO -------------------- */
-
-function applyKmAndDisagiata({base, shipments=1, opts, rules, alerts, mode="GROUPAGE"}){
-  const kmThreshold = DB.groupageRates?.meta?.km_threshold ?? 30;
-  const kmSurcharge = DB.groupageRates?.meta?.km_surcharge_per_km ?? 0;
-  const disFee = DB.groupageRates?.meta?.disagiata_surcharge ?? 0;
-
-  const kmOver = Math.max(0, parseInt(opts?.kmOver || 0, 10) || 0);
-
-  if(kmOver > 0){
-    alerts.push(`Distanza extra indicata: +${kmOver} km (oltre ${kmThreshold} km). Verificare condizioni.`);
-    if(kmSurcharge > 0){
-      base += (kmOver * kmSurcharge) * (mode === "PALLET" ? shipments : 1);
-      rules.push(`km+${kmOver}`);
-    }
-  }
-
-  if(opts?.disagiata){
-    alerts.push("Località disagiata: possibile extra / preventivo (flag).");
-    if(disFee > 0){
-      base += disFee * (mode === "PALLET" ? shipments : 1);
-      rules.push("disagiata");
-    }
-  }
-
-  return base;
-}
-
-function computePallet({region, palletType, qty, opts, art}){
-  const rules = [];
-  const alerts = [];
-
-  if(!region) return { cost:null, rules:["Manca regione"], alerts:["Seleziona una regione."] };
-  if(!palletType) return { cost:null, rules:["Manca taglia bancale"], alerts:["Seleziona tipo bancale (QUARTER/HALF/MEDIUM/...)."] };
-
-  const rate = DB.palletRates?.rates?.[region]?.[palletType];
-  if(rate == null){
-    return { cost:null, rules:["Tariffa non trovata"], alerts:[`Nessuna tariffa bancale per ${region} / ${palletType}.`] };
-  }
-
-  const maxPerShipment = DB.palletRates?.meta?.maxPalletsPerShipment ?? 5;
-  const shipments = Math.ceil(qty / maxPerShipment);
-  if(shipments > 1){
-    rules.push(`split:${shipments}`);
-    alerts.push(`Quantità > ${maxPerShipment}: divisione in ${shipments} spedizioni (stima).`);
-  }
-
-  let base = rate * qty;
-
-  if(opts.preavviso && DB.palletRates?.meta?.preavviso_fee != null){
-    base += DB.palletRates.meta.preavviso_fee * shipments;
-    rules.push("preavviso");
-  }
-  if(opts.assicurazione && DB.palletRates?.meta?.insurance_pct != null){
-    base = base * (1 + DB.palletRates.meta.insurance_pct);
-    rules.push("assicurazione");
-  }
-
-  base = applyKmAndDisagiata({ base, shipments, opts, rules, alerts, mode:"PALLET" });
-
-  // ✅ se l’articolo richiede preventivo, lo segnaliamo ma NON blocchiamo il calcolo
-  if(art?.rules?.forceQuote){
-    rules.push("forceQuote");
-    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo.");
-  }
-
-  return { cost: round2(base), rules, alerts };
-}
-
-function matchGroupageBracket(value, brackets){
-  for(const b of brackets){
-    const okMin = value >= (b.min ?? 0);
-    const okMax = (b.max == null) ? true : value <= b.max;
-    if(okMin && okMax) return b.price;
-  }
-  return null;
-}
-
-function computeGroupage({province, lm, quintali, palletCount, opts, art}){
-  const rules = [];
-  const alerts = [];
-
-  if(!province) return { cost:null, rules:["Manca provincia"], alerts:["Seleziona una provincia."] };
-
-  const resolved = resolveGroupageProvinceKey(province);
-  if(!resolved){
-    return { cost:null, rules:["Provincia non trovata"], alerts:[`Nessuna tariffa groupage per ${province}.`] };
-  }
-
-  const p = resolved.data;
-  if(resolved.matchedBy === "group"){
-    rules.push(`provGroup:${resolved.key}`);
-    alerts.push(`Provincia ${province} tariffata come gruppo: ${resolved.key}`);
-  }
-
-  const candidates = [];
-
-  if(lm > 0 && Array.isArray(p.linearMeters)){
-    const price = matchGroupageBracket(lm, p.linearMeters);
-    if(price != null) candidates.push({mode:"lm", price});
-  }
-  if(quintali > 0 && Array.isArray(p.quintali)){
-    const price = matchGroupageBracket(quintali, p.quintali);
-    if(price != null) candidates.push({mode:"quintali", price});
-  }
-  if(palletCount > 0 && Array.isArray(p.pallets)){
-    const price = matchGroupageBracket(palletCount, p.pallets);
-    if(price != null) candidates.push({mode:"pallets", price});
-  }
-
-  if(candidates.length === 0){
-    return {
-      cost:null,
-      rules:["Nessun parametro groupage valido"],
-      alerts:["Inserisci almeno uno tra Metri lineari / Quintali / N° bancali con valori coerenti alle fasce."]
-    };
-  }
-
-  candidates.sort((a,b)=>a.price-b.price);
-  let base = candidates[0].price;
-  rules.push(`best:${candidates[0].mode}`);
-
-  if(opts.sponda && DB.groupageRates?.meta?.liftgate_fee != null){
-    base += DB.groupageRates.meta.liftgate_fee;
-    rules.push("sponda");
-  }
-  if(opts.preavviso && DB.groupageRates?.meta?.preavviso_fee != null){
-    base += DB.groupageRates.meta.preavviso_fee;
-    rules.push("preavviso");
-  }
-  if(opts.assicurazione && DB.groupageRates?.meta?.insurance_pct != null){
-    base = base * (1 + DB.groupageRates.meta.insurance_pct);
-    rules.push("assicurazione");
-  }
-
-  base = applyKmAndDisagiata({ base, shipments:1, opts, rules, alerts, mode:"GROUPAGE" });
-
-  // ✅ se l’articolo richiede preventivo, lo segnaliamo ma NON blocchiamo il calcolo
-  if(art?.rules?.forceQuote){
-    rules.push("forceQuote");
-    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo.");
-  }
-
-  return { cost: round2(base), rules, alerts };
-}
-
-// ✅ GLS: non c’è tariffario nel tuo Excel 2026 -> blocchiamo
-function computeGLS(){
-  return {
-    cost: null,
-    rules: ["GLS disabilitato"],
-    alerts: ["Nel file Excel 2026 non esiste un tariffario GLS: calcolo non disponibile."]
-  };
-}
-
-function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, clientPrice, markupMode, markupPct, rules, alerts, extraNote}){
-  const lines = [];
-  lines.push(`SERVIZIO: ${service}`);
-  lines.push(`DESTINAZIONE: ${province ? (province + " / ") : ""}${region || "—"}`);
-  lines.push(`ARTICOLO: ${art ? `${art.brand || ""} ${art.name} (${art.code || art.id})`.trim() : "—"}`);
-  lines.push(`QTA: ${qty}`);
-
-  if(service === "PALLET") lines.push(`Bancale: ${palletType || "—"}`);
-  if(service === "GROUPAGE") lines.push(`Groupage: LM=${lm} | q.li=${quintali} | plt=${palletCount}`);
-
-  const optList = [];
-  if(opts.preavviso) optList.push("preavviso");
-  if(opts.assicurazione) optList.push("assicurazione");
-  if(opts.sponda) optList.push("sponda");
-  if(opts.disagiata) optList.push("disagiata");
-  if((opts.kmOver||0) > 0) optList.push(`km+${opts.kmOver}`);
-  lines.push(`OPZIONI: ${optList.length ? optList.join(", ") : "nessuna"}`);
-
-  if(extraNote?.trim()) lines.push(`NOTE EXTRA: ${extraNote.trim()}`);
-
-  lines.push("");
-  lines.push(`COSTO STIMATO: ${moneyEUR(cost)}`);
-  if(markupPct != null && (parseFloat(markupPct)||0) > 0){
-    const label = (markupMode === 'MARGINE') ? 'Margine' : 'Ricarico';
-    lines.push(`${label}: ${round2(parseFloat(markupPct)||0)}%`);
-    lines.push(`PREZZO CLIENTE: ${moneyEUR(clientPrice)}`);
-  }
-
-  if(rules?.length) lines.push(`REGOLE: ${rules.join(" | ")}`);
-
-  if(alerts?.length){
-    lines.push("");
-    lines.push("ATTENZIONE:");
-    for(const a of alerts) lines.push(`- ${a}`);
-  }
-
-  return lines.join("\n");
-}
-
-/* -------------------- BATCH OFFERTA (fix match code) -------------------- */
-
-function findArticleByCode(code){
-  const t = normalizeCode(code);
-  if(!t) return null;
-  return DB.articles.find(a => normalizeCode(a.code || "") === t) || null;
-}
-
-/* -------------------- UI ACTIONS -------------------- */
-
-function onCalc(){
-  const service = UI.service.value;
-
-  const region = normalizeRegion(UI.region.value);
-  const province = normalizeProvince(UI.province.value);
-
-  const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
-  const palletType = (UI.palletType.value || "").trim();
-
-  const lm = parseFloat(UI.lm.value || "0");
-  const quintali = parseFloat(UI.quintali.value || "0");
-  const palletCount = parseFloat(UI.palletCount.value || "0");
-
-  const markupMode = (UI.markupMode?.value || 'RICARICO').toUpperCase();
-  const markupPct = parseFloat(UI.markupPct?.value || '0');
-
-  const opts = {
-    preavviso: !!UI.optPreavviso.checked,
-    assicurazione: !!UI.optAssicurazione.checked,
-    sponda: !!UI.optSponda.checked,
-    disagiata: !!UI.optDisagiata?.checked,
-    kmOver: parseInt(UI.kmOver?.value || "0", 10) || 0
-  };
-
-  const art = selectedArticle();
-
-  UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0) : "—";
-
-  let out;
-  if(service === "PALLET"){
-    out = computePallet({ region, palletType, qty, opts, art });
-  } else if(service === "GROUPAGE"){
-    out = computeGroupage({ province, lm, quintali, palletCount, opts, art });
   } else {
     out = computeGLS();
   }
