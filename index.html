@@ -179,6 +179,20 @@
           <div class="label">Costo stimato</div>
           <div class="value" id="outCost">—</div>
         </div>
+
+        <!-- ✅ NUOVO: RICARICO -->
+        <div class="price">
+          <div class="label">Ricarico %</div>
+          <input id="markupPct" type="number" min="0" step="0.1" value="0" style="width:100%; margin-top:6px;">
+          <div class="hint" style="margin-top:6px;">Applica il ricarico al costo stimato.</div>
+        </div>
+
+        <!-- ✅ NUOVO: PREZZO CLIENTE -->
+        <div class="price">
+          <div class="label">Prezzo cliente</div>
+          <div class="value" id="outClientPrice">—</div>
+        </div>
+
         <div class="meta">
           <div class="label">Riepilogo</div>
           <pre id="outText">Carica dati…</pre>
