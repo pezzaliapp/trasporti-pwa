@@ -180,11 +180,21 @@
           <div class="value" id="outCost">—</div>
         </div>
 
-        <!-- ✅ NUOVO: RICARICO -->
+        <!-- ✅ NUOVO: TOGGLE + % -->
         <div class="price">
-          <div class="label">Ricarico %</div>
+          <div class="label">Modalità</div>
+          <select id="markupMode" style="width:100%; margin-top:6px;">
+            <option value="RICARICO">Ricarico %</option>
+            <option value="MARGINE">Margine %</option>
+          </select>
+
+          <div class="label" style="margin-top:10px;">Valore %</div>
           <input id="markupPct" type="number" min="0" step="0.1" value="0" style="width:100%; margin-top:6px;">
-          <div class="hint" style="margin-top:6px;">Applica il ricarico al costo stimato.</div>
+
+          <div class="hint" style="margin-top:6px;">
+            Ricarico%: <span style="opacity:.85;">Prezzo = Costo × (1 + %)</span><br>
+            Margine%: <span style="opacity:.85;">Prezzo = Costo ÷ (1 − %)</span>
+          </div>
         </div>
 
         <!-- ✅ NUOVO: PREZZO CLIENTE -->
