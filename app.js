@@ -43,7 +43,9 @@ const UI = {
   btnCopy: $("btnCopy"),
 
   outCost: $("outCost"),
-  outClientPrice: $("outClientPrice"), // ✅ nuovo (HTML)
+  outClientPrice: $("outClientPrice"),
+  markupMode: $("markupMode"),
+  markupPct: $("markupPct"),
   outText: $("outText"),
   outAlerts: $("outAlerts"),
 
@@ -51,12 +53,6 @@ const UI = {
   dbgRules: $("dbgRules"),
   dbgData: $("dbgData"),
   pwaStatus: $("pwaStatus"),
-
-  // Ricarico/Margine
-  // - markupPct: input numero (HTML già aggiunto)
-  // - markupMode: opzionale (se non c'è => default RICARICO)
-  markupPct: $("markupPct"),
-  markupMode: $("markupMode"),
 
   // Batch / Convertitori
   fileArticlesCsv: $("fileArticlesCsv"),
@@ -74,13 +70,28 @@ const UI = {
 const MEM = {
   generatedArticlesJSON: null,
   generatedGeoJSON: null,
-  batchCSVResult: null,
-  lastCalc: null, // ✅ memorizza ultimo calcolo (cost + summary base)
+  batchCSVResult: null
 };
 
 function moneyEUR(v){
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
   return new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(v);
+}
+
+function pctToFactor(pct){
+  const p = (parseFloat(pct) || 0) / 100;
+  return p;
+}
+
+function computeClientPrice(cost, mode, pct){
+  if(cost === null || cost === undefined || Number.isNaN(cost)) return null;
+  const p = pctToFactor(pct);
+  if(!mode || mode === "RICARICO"){
+    return round2(cost * (1 + p));
+  }
+  // MARGINE: Prezzo = Costo / (1 - p)
+  if(p >= 1) return null;
+  return round2(cost / (1 - p));
 }
 
 function show(el, yes){ if(el) el.style.display = yes ? "" : "none"; }
@@ -151,48 +162,6 @@ function clearTouched(el){
   delete el.dataset.touched;
 }
 
-/* -------------------- RICARICO / MARGINE -------------------- */
-
-function getMarkupMode(){
-  // se non c’è controllo UI => default RICARICO
-  const v = (UI.markupMode?.value || "").trim().toUpperCase();
-  if(v === "MARGINE" || v === "MARGIN") return "MARGINE";
-  return "RICARICO";
-}
-
-function parsePct(x){
-  const n = parseFloat(String(x ?? "").replace(",", "."));
-  if(!Number.isFinite(n) || n < 0) return 0;
-  return n;
-}
-
-function computeClientPrice(cost, pct, mode){
-  if(cost === null || cost === undefined || Number.isNaN(cost)) return null;
-  const p = parsePct(pct);
-  if(p <= 0) return round2(cost);
-
-  if(mode === "MARGINE"){
-    // Margine% = (Prezzo - Costo) / Prezzo
-    // => Prezzo = Costo / (1 - Margine)
-    const m = p / 100;
-    if(m >= 1) return null;
-    return round2(cost / (1 - m));
-  }
-
-  // Ricarico% = (Prezzo - Costo) / Costo
-  return round2(cost * (1 + (p/100)));
-}
-
-function updateClientPriceUI(cost){
-  if(!UI.outClientPrice) return;
-  const mode = getMarkupMode();
-  const pct = UI.markupPct?.value ?? 0;
-  const price = computeClientPrice(cost, pct, mode);
-  UI.outClientPrice.textContent = moneyEUR(price);
-}
-
-/* -------------------- UI VISIBILITY -------------------- */
-
 function applyServiceUI(){
   const s = UI.service.value;
 
@@ -207,8 +176,6 @@ function applyServiceUI(){
   if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
   if(UI.btnCopy) UI.btnCopy.disabled = true;
 }
-
-/* -------------------- SEARCH ARTICOLI -------------------- */
 
 function searchArticles(q){
   const t = (q || "").trim().toLowerCase();
@@ -293,48 +260,27 @@ function onArticleChange(){
   const art = selectedArticle();
   if(!art) return;
 
-  const r = art.rules || {};
-  const pack = art.pack || {};
-
-  // --- Auto-fill PALLET ---
-  const pt = (pack.palletType || "").trim();
-  if(pt && UI.palletType && !isTouched(UI.palletType)){
-    UI.palletType.value = pt;
+  // ✅ se l’articolo ha pack.palletType, compila automaticamente PALLET TYPE
+  const pt = (art.pack?.palletType || "").trim();
+  if(pt && UI.palletType){
+    if(!isTouched(UI.palletType)){
+      UI.palletType.value = pt;
+    }
   }
 
-  // --- Auto-fill GROUPAGE ---
-  if(UI.service && UI.service.value === "GROUPAGE"){
-    if(UI.lm && !isTouched(UI.lm) && (r.groupageLm != null)){
+  // ✅ AUTO-FILL GROUPAGE da rules (es. groupageLm)
+  const r = art.rules || {};
+  if(UI.service?.value === "GROUPAGE"){
+    if(r.groupageLm != null && UI.lm && !isTouched(UI.lm)){
       UI.lm.value = String(r.groupageLm);
     }
-
-    if(UI.quintali && !isTouched(UI.quintali)){
-      if(r.groupageQuintali != null){
-        UI.quintali.value = String(r.groupageQuintali);
-      } else if(pack.weightKg != null && !Number.isNaN(Number(pack.weightKg))){
-        UI.quintali.value = String(round2(Number(pack.weightKg) / 100));
-      }
+    // se in futuro aggiungi: groupageQuintali / groupagePalletCount
+    if(r.groupageQuintali != null && UI.quintali && !isTouched(UI.quintali)){
+      UI.quintali.value = String(r.groupageQuintali);
     }
-
-    if(UI.palletCount && !isTouched(UI.palletCount)){
-      if(r.groupagePalletCount != null){
-        UI.palletCount.value = String(r.groupagePalletCount);
-      } else if(pt){
-        UI.palletCount.value = "1";
-      }
+    if(r.groupagePalletCount != null && UI.palletCount && !isTouched(UI.palletCount)){
+      UI.palletCount.value = String(r.groupagePalletCount);
     }
-
-    // Se noSponda=true, disabilita l’opzione sponda
-    if(UI.optSponda){
-      if(r.noSponda){
-        UI.optSponda.checked = false;
-        UI.optSponda.disabled = true;
-      } else {
-        UI.optSponda.disabled = false;
-      }
-    }
-  } else {
-    if(UI.optSponda) UI.optSponda.disabled = false;
   }
 
   // ✅ forza servizio PALLET se stai su GLS o se service è vuoto
@@ -501,7 +447,7 @@ function computeGLS(){
   };
 }
 
-function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote, clientPrice, markupMode, markupPct}){
+function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, clientPrice, markupMode, markupPct, rules, alerts, extraNote}){
   const lines = [];
   lines.push(`SERVIZIO: ${service}`);
   lines.push(`DESTINAZIONE: ${province ? (province + " / ") : ""}${region || "—"}`);
@@ -523,16 +469,11 @@ function buildSummary({service, region, province, art, qty, palletType, lm, quin
 
   lines.push("");
   lines.push(`COSTO STIMATO: ${moneyEUR(cost)}`);
-
-  // ✅ nuovo: prezzo cliente
-  const pct = parsePct(markupPct);
-  const modeLabel = (markupMode === "MARGINE") ? "Margine" : "Ricarico";
-  if(pct > 0){
-    lines.push(`${modeLabel}: ${pct}%`);
-  } else {
-    lines.push(`${modeLabel}: 0%`);
+  if(markupPct != null && (parseFloat(markupPct)||0) > 0){
+    const label = (markupMode === 'MARGINE') ? 'Margine' : 'Ricarico';
+    lines.push(`${label}: ${round2(parseFloat(markupPct)||0)}%`);
+    lines.push(`PREZZO CLIENTE: ${moneyEUR(clientPrice)}`);
   }
-  lines.push(`PREZZO CLIENTE: ${moneyEUR(clientPrice)}`);
 
   if(rules?.length) lines.push(`REGOLE: ${rules.join(" | ")}`);
 
@@ -564,9 +505,12 @@ function onCalc(){
   const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
   const palletType = (UI.palletType.value || "").trim();
 
-  const lm = parseFloat((UI.lm.value || "0").toString().replace(",", "."));
-  const quintali = parseFloat((UI.quintali.value || "0").toString().replace(",", "."));
-  const palletCount = parseFloat((UI.palletCount.value || "0").toString().replace(",", "."));
+  const lm = parseFloat(UI.lm.value || "0");
+  const quintali = parseFloat(UI.quintali.value || "0");
+  const palletCount = parseFloat(UI.palletCount.value || "0");
+
+  const markupMode = (UI.markupMode?.value || 'RICARICO').toUpperCase();
+  const markupPct = parseFloat(UI.markupPct?.value || '0');
 
   const opts = {
     preavviso: !!UI.optPreavviso.checked,
@@ -578,9 +522,7 @@ function onCalc(){
 
   const art = selectedArticle();
 
-  UI.dbgArticle.textContent = art
-    ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0)
-    : "—";
+  UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0) : "—";
 
   let out;
   if(service === "PALLET"){
@@ -591,13 +533,11 @@ function onCalc(){
     out = computeGLS();
   }
 
+  const clientPrice = computeClientPrice(out.cost, markupMode, markupPct);
+  if(UI.outClientPrice) UI.outClientPrice.textContent = moneyEUR(clientPrice);
+
   UI.outAlerts.innerHTML = "";
   (out.alerts || []).forEach(a => addAlert("Nota / Controllo", a));
-
-  // ✅ calcolo prezzo cliente
-  const markupMode = getMarkupMode();
-  const markupPct = UI.markupPct?.value ?? 0;
-  const clientPrice = computeClientPrice(out.cost, markupPct, markupMode);
 
   const summary = buildSummary({
     service,
@@ -609,35 +549,24 @@ function onCalc(){
     lm, quintali, palletCount,
     opts,
     cost: out.cost,
-    rules: out.rules || [],
-    alerts: out.alerts || [],
-    extraNote: UI.extraNote.value || "",
     clientPrice,
     markupMode,
-    markupPct
+    markupPct,
+
+    rules: out.rules || [],
+    alerts: out.alerts || [],
+    extraNote: UI.extraNote.value || ""
   });
 
   UI.outText.textContent = summary;
   UI.outCost.textContent = moneyEUR(out.cost);
-  updateClientPriceUI(out.cost);
-
+  if((parseFloat(markupPct)||0) <= 0){
+    if(UI.outClientPrice) UI.outClientPrice.textContent = moneyEUR(out.cost);
+  }
   UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
   UI.btnCopy.disabled = !summary;
   UI.btnCopy.dataset.copy = summary;
-
-  MEM.lastCalc = { cost: out.cost };
-}
-
-function recalcClientOnly(){
-  // Aggiorna solo output prezzo cliente senza toccare alert/riepilogo
-  // Se vuoi allineare anche il riepilogo, richiama onCalc()
-  if(MEM.lastCalc && typeof MEM.lastCalc.cost !== "undefined"){
-    updateClientPriceUI(MEM.lastCalc.cost);
-  } else {
-    // se non c'è un calcolo precedente, non fare nulla
-    if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
-  }
 }
 
 async function onCopy(){
@@ -688,14 +617,18 @@ async function init(){
   const regions = DB.palletRates?.meta?.regions || Object.keys(DB.palletRates.rates || {});
   fillSelect(UI.region, regions, { placeholder: "— Seleziona Regione —" });
 
-  // Provinces fallback: estrai token (2 lettere) dalle chiavi groupage
+  // Provinces (UI: usa GEO se presente, altrimenti fallback)
+  // Fallback: prova a estrarre token (2 lettere) dalle chiavi groupage
   const provFromGroupageKeys = [];
   const groupKeys = Object.keys(DB.groupageRates?.provinces || {});
   for(const k of groupKeys){
     provFromGroupageKeys.push(...tokenizeProvinceGroupKey(k));
+    // se per caso hai anche province singole nel JSON:
     if(/^[A-Z]{2}$/.test(k.toUpperCase().trim())) provFromGroupageKeys.push(normalizeProvince(k));
   }
   const allProvincesFallback = uniq(provFromGroupageKeys);
+
+  // se GEO c'è, la lista province di default la prendiamo dal groupage (fallback) ma poi filtriamo su change regione
   fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
 
   // Pallet types
@@ -719,10 +652,8 @@ async function init(){
   UI.article.addEventListener("change", onArticleChange);
   UI.btnCalc.addEventListener("click", onCalc);
   UI.btnCopy.addEventListener("click", onCopy);
-
-  // ✅ ricarico/margine: aggiorna prezzo cliente quando cambia
-  if(UI.markupPct) UI.markupPct.addEventListener("input", () => recalcClientOnly());
-  if(UI.markupMode) UI.markupMode.addEventListener("change", () => recalcClientOnly());
+  if(UI.markupPct) UI.markupPct.addEventListener("input", onCalc);
+  if(UI.markupMode) UI.markupMode.addEventListener("change", onCalc);
 
   // Filter provinces when region changes
   UI.region.addEventListener("change", () => {
