@@ -145,7 +145,7 @@
     "name": "MEC 810VD",
     "code": "MEC 810VD",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "MEDIUM",
       "weightKg": 142.0,
       "dimsCm": [
         96.0,
@@ -225,7 +225,7 @@
     "name": "MEC 10",
     "code": "MEC 10",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "MEDIUM",
       "weightKg": 137.0,
       "dimsCm": [
         96.0,
@@ -245,7 +245,7 @@
     "name": "MEC 10BL",
     "code": "MEC 10BL",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "MEDIUM",
       "weightKg": 140.0,
       "dimsCm": [
         96.0,
@@ -403,7 +403,7 @@
     "name": "CM 1200BB",
     "code": "CM 1200BB",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "LIGHT + 10%",
       "weightKg": 412.0,
       "dimsCm": [
         115.0,
@@ -421,7 +421,7 @@
     "name": "PUMA",
     "code": "PUMA",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "LIGHT",
       "weightKg": 338.0,
       "dimsCm": [
         130.0,
@@ -457,7 +457,7 @@
     "name": "LIGRO",
     "code": "LIGRO",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "LIGHT",
       "weightKg": 265.0,
       "dimsCm": [
         120.0,
@@ -546,7 +546,7 @@
     "name": "F 535 S",
     "code": "F 535 S",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "LIGHT",
       "weightKg": 249.0,
       "dimsCm": [
         110.0,
@@ -651,7 +651,7 @@
     "name": "F 524S",
     "code": "F 524S",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "LIGHT",
       "weightKg": 222.0,
       "dimsCm": [
         97.0,
@@ -831,7 +831,7 @@
     "name": "BASIC 124",
     "code": "BASIC 124",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "LIGHT",
       "weightKg": 203.0,
       "dimsCm": [
         112.0,
@@ -849,7 +849,7 @@
     "name": "BASIC 224",
     "code": "BASIC 224",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "LIGHT",
       "weightKg": 261.0,
       "dimsCm": [
         115.0,
@@ -1029,7 +1029,7 @@
     "name": "PREMITALLONE",
     "code": "PREMITALLONE",
     "pack": {
-      "palletType": "HALF",
+      "palletType": "LIGHT + 10%",
       "weightKg": 25.0,
       "dimsCm": [
         76.0,
@@ -1279,7 +1279,7 @@
     "name": "TMS 26",
     "code": "TMS 26",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "MEDIUM + 10%",
       "weightKg": 462.0,
       "dimsCm": [
         110.0,
@@ -1440,7 +1440,7 @@
     "name": "L 3400",
     "code": "L 3400",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "MEGA + 30%",
       "weightKg": 1071.0,
       "dimsCm": [
         170.0,
@@ -1458,7 +1458,7 @@
     "name": "L 3500 EVO",
     "code": "L 3500 EVO",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "MEGA + 10%",
       "weightKg": 1070.0,
       "dimsCm": [
         168.0,
@@ -1494,7 +1494,7 @@
     "name": "L 3100",
     "code": "L 3100",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "LARGE + 10%",
       "weightKg": 605.0,
       "dimsCm": [
         160.0,
@@ -1512,7 +1512,7 @@
     "name": "L 1500A",
     "code": "L 1500A",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "LARGE + 80%",
       "weightKg": 700.0,
       "dimsCm": [
         210.0,
@@ -1933,7 +1933,7 @@
     "name": "GEO 15",
     "code": "GEO 15",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "HALF",
       "weightKg": 50.0,
       "dimsCm": [
         284.0,
@@ -2061,7 +2061,7 @@
     "name": "SCM 230",
     "code": "SCM 230",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "QUARTER",
       "weightKg": 59.0,
       "dimsCm": [
         135.0,
@@ -2115,7 +2115,7 @@
     "name": "SCM 476",
     "code": "SCM 476",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "QUARTER",
       "weightKg": 114.0,
       "dimsCm": [
         135.0,
@@ -2491,7 +2491,7 @@
     "name": "NIC 20",
     "code": "NIC 20",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "LIGHT",
       "weightKg": 97.0,
       "dimsCm": [
         68.0,
@@ -2509,7 +2509,7 @@
     "name": "NIL 50",
     "code": "NIL 50",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "LIGHT",
       "weightKg": 99.0,
       "dimsCm": [
         68.0,
@@ -2527,7 +2527,7 @@
     "name": "NIT 18",
     "code": "NIT 18",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "MEDIUM",
       "weightKg": 70.0,
       "dimsCm": [
         65.0,
@@ -2545,7 +2545,7 @@
     "name": "SA 1200",
     "code": "SA 1200",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "LIGHT",
       "weightKg": 70.0,
       "dimsCm": [
         75.0,
@@ -2563,7 +2563,7 @@
     "name": "SA 2500",
     "code": "SA 2500",
     "pack": {
-      "palletType": "FULL",
+      "palletType": "LIGHT",
       "weightKg": 71.0,
       "dimsCm": [
         75.0,
