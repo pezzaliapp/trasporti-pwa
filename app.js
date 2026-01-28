@@ -1,6 +1,7 @@
-/* Trasporti PWA — logica base + Batch/Convertitori + GEO + km/disagiata
+/* Trasporti PWA — logica base + Batch/Convertitori + GEO + km/disagiata + Ricarico/Margine
    - Carica JSON (articoli + tariffe + geo province)
    - Calcolo: PALLET / GROUPAGE  (GLS disabilitato se non configurato)
+   - Province filtrate per Regione via geo_provinces.json (fix: reset provincia non valida)
 */
 
 const $ = (id) => document.getElementById(id);
@@ -12,6 +13,7 @@ let DB = {
 };
 
 let GEO = null; // geo_provinces.json (Regione -> Province)
+let allProvincesFallback = []; // popolato in init()
 
 const UI = {
   // Core
@@ -54,7 +56,7 @@ const UI = {
   dbgData: $("dbgData"),
   pwaStatus: $("pwaStatus"),
 
-  // Batch / Convertitori
+  // Batch / Convertitori (UI presente ma gestione “light”)
   fileArticlesCsv: $("fileArticlesCsv"),
   fileGeoCsv: $("fileGeoCsv"),
   fileOfferCsv: $("fileOfferCsv"),
@@ -70,7 +72,7 @@ const UI = {
 const MEM = {
   generatedArticlesJSON: null,
   generatedGeoJSON: null,
-  batchCSVResult: null
+  batchCSVResult: null,
 };
 
 function moneyEUR(v){
@@ -78,9 +80,10 @@ function moneyEUR(v){
   return new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(v);
 }
 
+function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+
 function pctToFactor(pct){
-  const p = (parseFloat(pct) || 0) / 100;
-  return p;
+  return (parseFloat(pct) || 0) / 100;
 }
 
 function computeClientPrice(cost, mode, pct){
@@ -124,15 +127,15 @@ function fillSelect(select, items, {placeholder="— Seleziona —", valueKey=nu
   }
 }
 
-function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+/* -------------------- NORMALIZZAZIONI (FIX PROVINCE) -------------------- */
 
 function normalizeProvince(p){
   const x = (p || "").trim().toUpperCase();
-  if(x === "SU") return "CI";
+  // compatibilità storica: se qualcuno usa CI, riportiamo a SU
+  if (x === "CI") return "SU";
   return x;
 }
 
-// ✅ NORMALIZZA REGIONE (per match con JSON in maiuscolo o nomi speciali)
 function normalizeRegion(r){
   return (r || "")
     .trim()
@@ -140,7 +143,6 @@ function normalizeRegion(r){
     .replace(/\s+/g, " ");
 }
 
-// ✅ NORMALIZZA CODICE ARTICOLO (MEC 820VDL == MEC820VDL)
 function normalizeCode(s){
   return (s || "")
     .toString()
@@ -149,7 +151,8 @@ function normalizeCode(s){
     .replace(/[^a-z0-9]/g, "");
 }
 
-// flags "touched" (non sovrascrivere se l’utente modifica a mano)
+/* -------------------- touched tracking -------------------- */
+
 function markTouched(el){
   if(!el) return;
   el.dataset.touched = "1";
@@ -161,6 +164,8 @@ function clearTouched(el){
   if(!el) return;
   delete el.dataset.touched;
 }
+
+/* -------------------- UI -------------------- */
 
 function applyServiceUI(){
   const s = UI.service.value;
@@ -175,6 +180,14 @@ function applyServiceUI(){
   if(UI.outCost) UI.outCost.textContent = "—";
   if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
   if(UI.btnCopy) UI.btnCopy.disabled = true;
+}
+
+function addAlert(title, text){
+  if(!UI.outAlerts) return;
+  const div = document.createElement("div");
+  div.className = "alert";
+  div.innerHTML = `<b>${title}</b><div>${text}</div>`;
+  UI.outAlerts.appendChild(div);
 }
 
 function searchArticles(q){
@@ -212,27 +225,37 @@ function selectedArticle(){
   return DB.articles.find(a => a.id === id) || null;
 }
 
-function addAlert(title, text){
-  if(!UI.outAlerts) return;
-  const div = document.createElement("div");
-  div.className = "alert";
-  div.innerHTML = `<b>${title}</b><div>${text}</div>`;
-  UI.outAlerts.appendChild(div);
+/* -------------------- GEO: province per regione (FIX RESET) -------------------- */
+
+function refreshProvincesByRegion(){
+  const regKey = normalizeRegion(UI.region.value);
+  const allowed =
+    (GEO && regKey && GEO[regKey] && Array.isArray(GEO[regKey]))
+      ? GEO[regKey].map(normalizeProvince)
+      : null;
+
+  const prev = normalizeProvince(UI.province.value);
+
+  if(allowed && allowed.length){
+    fillSelect(UI.province, uniq(allowed), { placeholder: "— Seleziona Provincia —" });
+
+    // se la provincia precedente non è ammessa -> reset
+    if(prev && !allowed.includes(prev)){
+      UI.province.value = "";
+    } else if(prev) {
+      UI.province.value = prev;
+    }
+  } else {
+    fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
+    if(prev) UI.province.value = prev;
+  }
 }
 
 /* -------------------- GROUPAGE: RISOLUZIONE PROVINCE "RAGGRUPPATE" -------------------- */
-/* Esempi chiavi Excel:
-   - "FR LT"
-   - "RI VT RM"
-   - "BN-NA"
-   - "AV-SA"
-   - "MT / PZ"
-*/
+
 function tokenizeProvinceGroupKey(key){
   const raw = (key || "").toUpperCase();
-  // split su spazi, slash, trattini, virgole, punto e virgola
   const tokens = raw.split(/[\s\/,\-;]+/g).map(t => t.trim()).filter(Boolean);
-  // tieni solo token "tipo provincia" (2 lettere)
   return tokens.filter(t => /^[A-Z]{2}$/.test(t)).map(normalizeProvince);
 }
 
@@ -240,10 +263,8 @@ function resolveGroupageProvinceKey(province2){
   const prov = normalizeProvince(province2);
   const provinces = DB.groupageRates?.provinces || {};
 
-  // 1) match diretto
   if(provinces[prov]) return { key: prov, data: provinces[prov], matchedBy: "direct" };
 
-  // 2) match dentro chiavi raggruppate
   for(const k of Object.keys(provinces)){
     const toks = tokenizeProvinceGroupKey(k);
     if(toks.includes(prov)){
@@ -254,25 +275,23 @@ function resolveGroupageProvinceKey(province2){
   return null;
 }
 
-/* -------------------- AUTO-FILL DA ARTICOLO -------------------- */
+/* -------------------- AUTO-FILL DA ARTICOLO (Option B) -------------------- */
 
 function onArticleChange(){
   const art = selectedArticle();
   if(!art) return;
 
-  // ✅ se l’articolo ha pack.palletType, compila automaticamente PALLET TYPE
-  const pt = (art.pack?.palletType || "").trim();
-  if(pt && UI.palletType){
-    if(!isTouched(UI.palletType)){
-      UI.palletType.value = pt;
-    }
+  const r = art.rules || {};
+  const pack = art.pack || {};
+  const pt = (pack.palletType || "").trim();
+
+  // PALLET: auto taglia bancale (solo se non toccato a mano)
+  if(pt && UI.palletType && !isTouched(UI.palletType)){
+    UI.palletType.value = pt;
   }
 
-  // ✅ AUTO-FILL GROUPAGE da rules (es. groupageLm)
-  const r = art.rules || {};
+  // GROUPAGE: compila SOLO se esplicitamente previsto (Option B)
   if(UI.service?.value === "GROUPAGE"){
-    // ✅ Opzione B: auto-compila i campi GROUPAGE SOLO se l’articolo lo richiede esplicitamente.
-    // Evita valori "fantasma" (es. LM=6) su articoli che normalmente viaggiano a Bancale.
     const allowAuto =
       !!r.groupageAutoFill ||
       (r.groupageLm != null) ||
@@ -300,6 +319,7 @@ function onArticleChange(){
         if(r.groupagePalletCount != null){
           UI.palletCount.value = String(r.groupagePalletCount);
         } else if(pt){
+          // se c'è bancale “di fatto” e non specificato, default = 1
           UI.palletCount.value = "1";
         }
       }
@@ -315,13 +335,256 @@ function onArticleChange(){
       }
     }
   } else {
+    if(UI.optSponda) UI.optSponda.disabled = false;
+  }
+}
+
+/* -------------------- CALCOLO -------------------- */
+
+function applyKmAndDisagiata({base, shipments=1, opts, rules, alerts, mode="GROUPAGE"}){
+  const kmThreshold = DB.groupageRates?.meta?.km_threshold ?? 30;
+  const kmSurcharge = DB.groupageRates?.meta?.km_surcharge_per_km ?? 0;
+  const disFee = DB.groupageRates?.meta?.disagiata_surcharge ?? 0;
+
+  const kmOver = Math.max(0, parseInt(opts?.kmOver || 0, 10) || 0);
+
+  if(kmOver > 0){
+    alerts.push(`Distanza extra indicata: +${kmOver} km (oltre ${kmThreshold} km). Verificare condizioni.`);
+    if(kmSurcharge > 0){
+      base += (kmOver * kmSurcharge) * (mode === "PALLET" ? shipments : 1);
+      rules.push(`km+${kmOver}`);
+    }
+  }
+
+  if(opts?.disagiata){
+    alerts.push("Località disagiata: possibile extra / preventivo (flag).");
+    if(disFee > 0){
+      base += disFee * (mode === "PALLET" ? shipments : 1);
+      rules.push("disagiata");
+    }
+  }
+
+  return base;
+}
+
+function computePallet({region, palletType, qty, opts, art}){
+  const rules = [];
+  const alerts = [];
+
+  if(!region) return { cost:null, rules:["Manca regione"], alerts:["Seleziona una regione."] };
+  if(!palletType) return { cost:null, rules:["Manca taglia bancale"], alerts:["Seleziona tipo bancale (MINI/QUARTER/HALF/... )."] };
+
+  const rate = DB.palletRates?.rates?.[region]?.[palletType];
+  if(rate == null){
+    return { cost:null, rules:["Tariffa non trovata"], alerts:[`Nessuna tariffa bancale per ${region} / ${palletType}.`] };
+  }
+
+  const maxPerShipment = DB.palletRates?.meta?.maxPalletsPerShipment ?? 5;
+  const shipments = Math.ceil(qty / maxPerShipment);
+  if(shipments > 1){
+    rules.push(`split:${shipments}`);
+    alerts.push(`Quantità > ${maxPerShipment}: divisione in ${shipments} spedizioni (stima).`);
+  }
+
+  let base = rate * qty;
+
+  if(opts.preavviso && DB.palletRates?.meta?.preavviso_fee != null){
+    base += DB.palletRates.meta.preavviso_fee * shipments;
+    rules.push("preavviso");
+  }
+  if(opts.assicurazione && DB.palletRates?.meta?.insurance_pct != null){
+    base = base * (1 + DB.palletRates.meta.insurance_pct);
+    rules.push("assicurazione");
+  }
+
+  base = applyKmAndDisagiata({ base, shipments, opts, rules, alerts, mode:"PALLET" });
+
+  if(art?.rules?.forceQuote){
+    rules.push("forceQuote");
+    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo.");
+  }
+
+  return { cost: round2(base), rules, alerts };
+}
+
+function matchGroupageBracket(value, brackets){
+  for(const b of brackets){
+    const okMin = value >= (b.min ?? 0);
+    const okMax = (b.max == null) ? true : value <= b.max;
+    if(okMin && okMax) return b.price;
+  }
+  return null;
+}
+
+function computeGroupage({province, lm, quintali, palletCount, opts, art}){
+  const rules = [];
+  const alerts = [];
+
+  if(!province) return { cost:null, rules:["Manca provincia"], alerts:["Seleziona una provincia."] };
+
+  const resolved = resolveGroupageProvinceKey(province);
+  if(!resolved){
+    return { cost:null, rules:["Provincia non trovata"], alerts:[`Nessuna tariffa groupage per ${province}.`] };
+  }
+
+  const p = resolved.data;
+  if(resolved.matchedBy === "group"){
+    rules.push(`provGroup:${resolved.key}`);
+    alerts.push(`Provincia ${province} tariffata come gruppo: ${resolved.key}`);
+  }
+
+  const candidates = [];
+
+  if(lm > 0 && Array.isArray(p.linearMeters)){
+    const price = matchGroupageBracket(lm, p.linearMeters);
+    if(price != null) candidates.push({mode:"lm", price});
+  }
+  if(quintali > 0 && Array.isArray(p.quintali)){
+    const price = matchGroupageBracket(quintali, p.quintali);
+    if(price != null) candidates.push({mode:"quintali", price});
+  }
+  if(palletCount > 0 && Array.isArray(p.pallets)){
+    const price = matchGroupageBracket(palletCount, p.pallets);
+    if(price != null) candidates.push({mode:"pallets", price});
+  }
+
+  if(candidates.length === 0){
+    return {
+      cost:null,
+      rules:["Nessun parametro groupage valido"],
+      alerts:["Inserisci almeno uno tra Metri lineari / Quintali / N° bancali con valori coerenti alle fasce."]
+    };
+  }
+
+  candidates.sort((a,b)=>a.price-b.price);
+  let base = candidates[0].price;
+  rules.push(`best:${candidates[0].mode}`);
+
+  if(opts.sponda && DB.groupageRates?.meta?.liftgate_fee != null){
+    base += DB.groupageRates.meta.liftgate_fee;
+    rules.push("sponda");
+  }
+  if(opts.preavviso && DB.groupageRates?.meta?.preavviso_fee != null){
+    base += DB.groupageRates.meta.preavviso_fee;
+    rules.push("preavviso");
+  }
+  if(opts.assicurazione && DB.groupageRates?.meta?.insurance_pct != null){
+    base = base * (1 + DB.groupageRates.meta.insurance_pct);
+    rules.push("assicurazione");
+  }
+
+  base = applyKmAndDisagiata({ base, shipments:1, opts, rules, alerts, mode:"GROUPAGE" });
+
+  if(art?.rules?.forceQuote){
+    rules.push("forceQuote");
+    alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo.");
+  }
+
+  return { cost: round2(base), rules, alerts };
+}
+
+function computeGLS(){
+  return {
+    cost: null,
+    rules: ["GLS disabilitato"],
+    alerts: ["Nel file Excel 2026 non esiste un tariffario GLS: calcolo non disponibile."]
+  };
+}
+
+function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, clientPrice, markupMode, markupPct, rules, alerts, extraNote}){
+  const lines = [];
+  lines.push(`SERVIZIO: ${service}`);
+  lines.push(`DESTINAZIONE: ${province ? (province + " / ") : ""}${region || "—"}`);
+  lines.push(`ARTICOLO: ${art ? `${art.brand || ""} ${art.name} (${art.code || art.id})`.trim() : "—"}`);
+  lines.push(`QTA: ${qty}`);
+
+  if(service === "PALLET") lines.push(`Bancale: ${palletType || "—"}`);
+  if(service === "GROUPAGE") lines.push(`Groupage: LM=${lm} | q.li=${quintali} | plt=${palletCount}`);
+
+  const optList = [];
+  if(opts.preavviso) optList.push("preavviso");
+  if(opts.assicurazione) optList.push("assicurazione");
+  if(opts.sponda) optList.push("sponda");
+  if(opts.disagiata) optList.push("disagiata");
+  if((opts.kmOver||0) > 0) optList.push(`km+${opts.kmOver}`);
+  lines.push(`OPZIONI: ${optList.length ? optList.join(", ") : "nessuna"}`);
+
+  if(extraNote?.trim()) lines.push(`NOTE EXTRA: ${extraNote.trim()}`);
+
+  lines.push("");
+  lines.push(`COSTO STIMATO: ${moneyEUR(cost)}`);
+
+  const pct = parseFloat(markupPct) || 0;
+  if(pct > 0){
+    lines.push(`${(markupMode === "MARGINE") ? "Margine" : "Ricarico"}: ${pct}%`);
+    lines.push(`PREZZO CLIENTE: ${moneyEUR(clientPrice)}`);
+  } else {
+    lines.push(`PREZZO CLIENTE: ${moneyEUR(cost)}`);
+  }
+
+  if(rules?.length) lines.push(`REGOLE: ${rules.join(" | ")}`);
+
+  if(alerts?.length){
+    lines.push("");
+    lines.push("ATTENZIONE:");
+    for(const a of alerts) lines.push(`- ${a}`);
+  }
+
+  return lines.join("\n");
+}
+
+/* -------------------- UI ACTIONS -------------------- */
+
+function onCalc(){
+  const service = UI.service.value;
+
+  const region = normalizeRegion(UI.region.value);
+  const province = normalizeProvince(UI.province.value);
+
+  const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
+  const palletType = (UI.palletType.value || "").trim();
+
+  const lm = parseFloat(UI.lm.value || "0");
+  const quintali = parseFloat(UI.quintali.value || "0");
+  const palletCount = parseFloat(UI.palletCount.value || "0");
+
+  const opts = {
+    preavviso: !!UI.optPreavviso.checked,
+    assicurazione: !!UI.optAssicurazione.checked,
+    sponda: !!UI.optSponda.checked,
+    disagiata: !!UI.optDisagiata?.checked,
+    kmOver: parseInt(UI.kmOver?.value || "0", 10) || 0
+  };
+
+  const art = selectedArticle();
+
+  if(UI.dbgArticle){
+    UI.dbgArticle.textContent = art
+      ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0)
+      : "—";
+  }
+
+  let out;
+  if(service === "PALLET"){
+    out = computePallet({ region, palletType, qty, opts, art });
+  } else if(service === "GROUPAGE"){
+    out = computeGroupage({ province, lm, quintali, palletCount, opts, art });
+  } else {
     out = computeGLS();
   }
 
+  // prezzo cliente
+  const markupMode = UI.markupMode?.value || "RICARICO";
+  const markupPct = UI.markupPct?.value || "0";
   const clientPrice = computeClientPrice(out.cost, markupMode, markupPct);
-  if(UI.outClientPrice) UI.outClientPrice.textContent = moneyEUR(clientPrice);
 
-  UI.outAlerts.innerHTML = "";
+  if(UI.outCost) UI.outCost.textContent = moneyEUR(out.cost);
+  if(UI.outClientPrice){
+    const pct = parseFloat(markupPct) || 0;
+    UI.outClientPrice.textContent = moneyEUR(pct > 0 ? clientPrice : out.cost);
+  }
+
+  if(UI.outAlerts) UI.outAlerts.innerHTML = "";
   (out.alerts || []).forEach(a => addAlert("Nota / Controllo", a));
 
   const summary = buildSummary({
@@ -337,25 +600,22 @@ function onArticleChange(){
     clientPrice,
     markupMode,
     markupPct,
-
     rules: out.rules || [],
     alerts: out.alerts || [],
     extraNote: UI.extraNote.value || ""
   });
 
-  UI.outText.textContent = summary;
-  UI.outCost.textContent = moneyEUR(out.cost);
-  if((parseFloat(markupPct)||0) <= 0){
-    if(UI.outClientPrice) UI.outClientPrice.textContent = moneyEUR(out.cost);
-  }
-  UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
+  if(UI.outText) UI.outText.textContent = summary;
+  if(UI.dbgRules) UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
-  UI.btnCopy.disabled = !summary;
-  UI.btnCopy.dataset.copy = summary;
+  if(UI.btnCopy){
+    UI.btnCopy.disabled = !summary;
+    UI.btnCopy.dataset.copy = summary;
+  }
 }
 
 async function onCopy(){
-  const text = UI.btnCopy.dataset.copy || "";
+  const text = UI.btnCopy?.dataset.copy || "";
   if(!text) return;
   try{
     await navigator.clipboard.writeText(text);
@@ -378,12 +638,12 @@ async function init(){
   if ("serviceWorker" in navigator){
     try{
       await navigator.serviceWorker.register("sw.js");
-      UI.pwaStatus.textContent = "Offline-ready: sì";
-    } catch(e){
-      UI.pwaStatus.textContent = "Offline-ready: no";
+      if(UI.pwaStatus) UI.pwaStatus.textContent = "Offline-ready: sì";
+    } catch {
+      if(UI.pwaStatus) UI.pwaStatus.textContent = "Offline-ready: no";
     }
   } else {
-    UI.pwaStatus.textContent = "Offline-ready: n/d";
+    if(UI.pwaStatus) UI.pwaStatus.textContent = "Offline-ready: n/d";
   }
 
   // Load datasets
@@ -391,7 +651,7 @@ async function init(){
   DB.palletRates = await loadJSON("data/pallet_rates_by_region.json");
   DB.groupageRates = await loadJSON("data/groupage_rates.json");
 
-  // GEO (province by region)
+  // GEO
   try{
     GEO = await loadJSON("data/geo_provinces.json");
   } catch {
@@ -402,18 +662,14 @@ async function init(){
   const regions = DB.palletRates?.meta?.regions || Object.keys(DB.palletRates.rates || {});
   fillSelect(UI.region, regions, { placeholder: "— Seleziona Regione —" });
 
-  // Provinces (UI: usa GEO se presente, altrimenti fallback)
-  // Fallback: prova a estrarre token (2 lettere) dalle chiavi groupage
+  // Fallback provinces da chiavi groupage
   const provFromGroupageKeys = [];
   const groupKeys = Object.keys(DB.groupageRates?.provinces || {});
   for(const k of groupKeys){
     provFromGroupageKeys.push(...tokenizeProvinceGroupKey(k));
-    // se per caso hai anche province singole nel JSON:
     if(/^[A-Z]{2}$/.test(k.toUpperCase().trim())) provFromGroupageKeys.push(normalizeProvince(k));
   }
-  const allProvincesFallback = uniq(provFromGroupageKeys);
-
-  // se GEO c'è, la lista province di default la prendiamo dal groupage (fallback) ma poi filtriamo su change regione
+  allProvincesFallback = uniq(provFromGroupageKeys);
   fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
 
   // Pallet types
@@ -425,42 +681,47 @@ async function init(){
   // Articles
   renderArticleList("");
 
-  // ✅ touched tracking (manual override)
+  // touched tracking
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
   if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
   if(UI.quintali) UI.quintali.addEventListener("input", () => markTouched(UI.quintali));
   if(UI.palletCount) UI.palletCount.addEventListener("input", () => markTouched(UI.palletCount));
 
-  // Events
-  UI.service.addEventListener("change", applyServiceUI);
-  UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
-  UI.article.addEventListener("change", onArticleChange);
-  UI.btnCalc.addEventListener("click", onCalc);
-  UI.btnCopy.addEventListener("click", onCopy);
+  // Events core
+  if(UI.service) UI.service.addEventListener("change", () => { applyServiceUI(); onArticleChange(); });
+  if(UI.q) UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
+  if(UI.article) UI.article.addEventListener("change", () => { onArticleChange(); onCalc(); });
+  if(UI.btnCalc) UI.btnCalc.addEventListener("click", onCalc);
+  if(UI.btnCopy) UI.btnCopy.addEventListener("click", onCopy);
   if(UI.markupPct) UI.markupPct.addEventListener("input", onCalc);
   if(UI.markupMode) UI.markupMode.addEventListener("change", onCalc);
 
-  // Filter provinces when region changes
-  UI.region.addEventListener("change", () => {
-    const regRaw = UI.region.value;
-    const reg = regRaw; // GEO potrebbe essere in formato diverso
-    const allowed = (GEO && reg && GEO[reg]) ? GEO[reg].map(normalizeProvince) : null;
+  // Province by region (FIX: usa normalizeRegion + reset provincia non valida)
+  if(UI.region){
+    UI.region.addEventListener("change", () => {
+      refreshProvincesByRegion();
+      onCalc();
+    });
+  }
 
-    if(allowed && allowed.length){
-      fillSelect(UI.province, uniq(allowed), { placeholder: "— Seleziona Provincia —" });
-    } else {
-      fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
-    }
-  });
+  if(UI.province){
+    UI.province.addEventListener("change", () => {
+      const v = normalizeProvince(UI.province.value);
+      if(UI.province.value !== v) UI.province.value = v;
+      onCalc();
+    });
+  }
 
-  UI.province.addEventListener("change", () => {
-    const v = normalizeProvince(UI.province.value);
-    if(UI.province.value !== v) UI.province.value = v;
-  });
+  // Applica filtro province già al primo load
+  refreshProvincesByRegion();
 
   applyServiceUI();
-  UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
-  UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${(allProvincesFallback||[]).length}`;
+
+  if(UI.outText) UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
+  if(UI.dbgData) UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${(allProvincesFallback||[]).length}`;
+
+  // primo calc “soft” (non obbligatorio, ma aggiorna prezzo cliente se markup > 0)
+  onCalc();
 }
 
 window.addEventListener("DOMContentLoaded", init);
