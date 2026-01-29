@@ -41,6 +41,9 @@ const UI = {
   extraNote: $("extraNote"),
   btnCalc: $("btnCalc"),
   btnCopy: $("btnCopy"),
+  markupMode: $("markupMode"),
+  markupPct: $("markupPct"),
+  outClientPrice: $("outClientPrice"),
 
   outCost: $("outCost"),
   outText: $("outText"),
@@ -64,38 +67,6 @@ const UI = {
   batchLog: $("batchLog"),
 };
 
-// --- Pricing (Ricarico/Margine) + live updates ---
-const STATE = {
-  lastCost: null
-};
-
-function parsePct(v){
-  const n = Number(String(v ?? "").replace(",", ".").trim());
-  return Number.isFinite(n) ? n : null;
-}
-
-function computeClientPrice(cost, mode, pct){
-  if(!Number.isFinite(cost)) return null;
-  const p = parsePct(pct);
-  if(p === null) return null;
-  const r = p/100;
-  if(mode === "markup"){ // Ricarico
-    return cost * (1 + r);
-  }
-  if(mode === "margin"){ // Margine
-    if(r >= 1) return null;
-    return cost / (1 - r);
-  }
-  return null;
-}
-
-function updateClientPrice(){
-  if(!UI.outClientPrice) return;
-  const price = computeClientPrice(STATE.lastCost, UI.markupMode?.value, UI.markupPct?.value);
-  UI.outClientPrice.textContent = (price === null) ? "—" : moneyEUR(price);
-}
-
-
 const MEM = {
   generatedArticlesJSON: null,
   generatedGeoJSON: null,
@@ -107,21 +78,35 @@ function moneyEUR(v){
   return new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(v);
 }
 
+// --- Prezzo cliente (ricarico / margine) ---
+let LAST_COST = null;
 
-function shouldForceGroupage(art){
-  if(!art) return false;
-  const r = art.rules || {};
-  const tags = (art.tags || []).map(t => String(t).toLowerCase());
-  // explicit flags coming from articles.json generation
-  if (r.forceService === "GROUPAGE" || r.onlyService === "GROUPAGE" || r.groupageOnly === true) return true;
-  // common tag hints
-  if (tags.includes("groupage") || tags.includes("parziale") || tags.includes("spedizione gls") || tags.includes("gls")) return true;
-  // heuristic: if we have groupage metrics but pallet is not explicitly defined, treat as groupage-first
-  const hasGroupageMetrics = (r.groupageLm != null) || (r.groupageQuintali != null) || (r.groupagePalletCount != null);
-  const hasPalletType = !!(art.palletType || (art.pack && art.pack.palletType));
-  if (hasGroupageMetrics && !hasPalletType) return true;
-  return false;
+function computeClientPrice(cost, mode, pct){
+  if(!Number.isFinite(cost) || cost <= 0) return null;
+  const p = Math.max(0, Math.min(99.99, Number(pct)||0)) / 100;
+  const md = (mode || 'RICARICO');
+  if(md === 'MARGINE'){
+    const denom = 1 - p;
+    if(denom <= 0) return null;
+    return cost / denom;
+  }
+  // RICARICO
+  return cost * (1 + p);
 }
+
+function updateClientPriceDisplay(cost){
+  if(Number.isFinite(cost)) LAST_COST = cost;
+  const c = LAST_COST;
+  if(!UI.outClientPrice){ return null; }
+  if(!Number.isFinite(c) || c <= 0){
+    UI.outClientPrice.textContent = '—';
+    return null;
+  }
+  const price = computeClientPrice(c, UI.markupMode?.value, UI.markupPct?.value);
+  UI.outClientPrice.textContent = price ? moneyEUR(price) : '—';
+  return price;
+}
+
 
 function show(el, yes){ if(el) el.style.display = yes ? "" : "none"; }
 
@@ -475,7 +460,7 @@ function computeGLS(){
   };
 }
 
-function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote}){
+function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, clientPrice, rules, alerts, extraNote}){
   const lines = [];
   lines.push(`SERVIZIO: ${service}`);
   lines.push(`DESTINAZIONE: ${province ? (province + " / ") : ""}${region || "—"}`);
@@ -497,6 +482,7 @@ function buildSummary({service, region, province, art, qty, palletType, lm, quin
 
   lines.push("");
   lines.push(`COSTO STIMATO: ${moneyEUR(cost)}`);
+  if(clientPrice){ lines.push(`PREZZO CLIENTE: ${moneyEUR(clientPrice)}`); }
   if(rules?.length) lines.push(`REGOLE: ${rules.join(" | ")}`);
 
   if(alerts?.length){
@@ -545,16 +531,7 @@ function onCalc(){
 
   let out;
   if(service === "PALLET"){
-    if(shouldForceGroupage(art)){
-      out = {
-        cost: null,
-        rules: ["Servizio non compatibile: questo articolo va gestito in GROUPAGE/Parziale."],
-        alerts: ["Per questo articolo il Bancale non è applicabile. Seleziona GROUPAGE per il preventivo."],
-        details: { blockedService: "PALLET", suggestedService: "GROUPAGE" }
-      };
-    } else {
-      out = computePallet({ region, palletType, qty, opts, art });
-    }
+    out = computePallet({ region, palletType, qty, opts, art });
   } else if(service === "GROUPAGE"){
     out = computeGroupage({ province, lm, quintali, palletCount, opts, art });
   } else {
@@ -581,9 +558,9 @@ function onCalc(){
 
   UI.outText.textContent = summary;
   UI.outCost.textContent = moneyEUR(out.cost);
-  STATE.lastCost = (Number.isFinite(out.cost) ? out.cost : null);
-  updateClientPrice();
-  UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
+  
+  const clientPrice = updateClientPriceDisplay(out.cost);
+UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
   UI.btnCopy.disabled = !summary;
   UI.btnCopy.dataset.copy = summary;
@@ -608,6 +585,35 @@ async function onCopy(){
 
 /* -------------------- INIT -------------------- */
 
+
+
+function liveRecalc(){
+  // ricalcolo solo se sono presenti i campi minimi
+  const service = UI.service?.value;
+  const region = UI.region?.value;
+  const art = UI.article?.value;
+  if(!service || !region || !art){
+    // comunque aggiorna il prezzo cliente se cambia modalità
+    updateClientPriceDisplay();
+    return;
+  }
+  onCalc();
+}
+
+function bindLiveInputs(){
+  const els = [
+    UI.service, UI.region, UI.province, UI.article, UI.qty, UI.palletType, UI.lm, UI.quintali, UI.palletCount, UI.kmOver, UI.extraNote,
+    UI.chkDisagiata, UI.optPreavviso, UI.optAssicurazione, UI.optSponda,
+    UI.markupMode, UI.markupPct
+  ].filter(Boolean);
+  let t=null;
+  const trig=()=>{ if(t) clearTimeout(t); t=setTimeout(liveRecalc, 120); };
+  els.forEach(el=>{
+    const ev = (el.tagName==='SELECT' || el.type==='checkbox') ? 'change' : 'input';
+    el.addEventListener(ev, trig);
+    if(ev!=='change') el.addEventListener('change', trig);
+  });
+}
 async function init(){
   // PWA
   if ("serviceWorker" in navigator){
@@ -694,43 +700,6 @@ async function init(){
   applyServiceUI();
   UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
   UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${(allProvincesFallback||[]).length}`;
-
-
-  // Pricing UI: recompute prezzo cliente when mode/% changes (no need to recalc transport)
-  if(UI.markupMode) UI.markupMode.addEventListener("change", updateClientPrice);
-  if(UI.markupPct) UI.markupPct.addEventListener("input", updateClientPrice);
-
-  // Live recalculation on flags / key inputs (debounced)
-  const debounce = (fn, ms=200) => {
-    let t = null;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), ms);
-    };
-  };
-
-  const onCalcLive = debounce(() => {
-    // Avoid running if nothing meaningful is selected yet
-    const hasArticle = UI.article?.value && UI.article.value !== "";
-    const hasRegion = UI.region?.value && UI.region.value !== "";
-    const hasService = UI.service?.value && UI.service.value !== "";
-    if(!hasService) return;
-    // For PALLET we need at least region + pallet type; for GROUPAGE need region+province (in your dataset) and article.
-    // If not enough data, let the normal validation show.
-    onCalc();
-  }, 220);
-
-  const liveEls = [
-    UI.service, UI.region, UI.province, UI.article, UI.qty,
-    UI.palletType, UI.lm, UI.quintali, UI.palletCount, UI.kmOver,
-    UI.optDisagiata, UI.optPreavviso, UI.optAssicurazione, UI.optSponda,
-    UI.extraNote
-  ].filter(Boolean);
-
-  liveEls.forEach(el => {
-    el.addEventListener("change", onCalcLive);
-    if(el.tagName === "INPUT") el.addEventListener("input", onCalcLive);
-  });
 }
 
 window.addEventListener("DOMContentLoaded", init);
