@@ -78,61 +78,41 @@ function moneyEUR(v){
   return new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(v);
 }
 
-// --- Prezzo cliente (ricarico / margine) ---
+// --- Prezzo cliente (Ricarico/Margine) ---
 let LAST_COST = null;
 
 function computeClientPrice(cost, mode, pct){
-  if(!Number.isFinite(cost) || cost <= 0) return null;
-  const p = Math.max(0, Math.min(99.99, Number(pct)||0)) / 100;
-  const md = (mode || 'RICARICO');
-  if(md === 'MARGINE'){
-    const denom = 1 - p;
-    if(denom <= 0) return null;
-    return cost / denom;
+  if(cost == null || !Number.isFinite(cost)) return null;
+  if(!Number.isFinite(pct)) return null;
+  const p = pct/100;
+  const m = String(mode||'').toUpperCase();
+  if(m === 'RICARICO'){
+    return cost * (1 + p);
   }
-  // RICARICO
+  if(m === 'MARGINE'){
+    if(p >= 1) return null;
+    return cost / (1 - p);
+  }
+  // fallback: ricarico
   return cost * (1 + p);
 }
 
-function updateClientPriceDisplay(cost){
-  // Se cost è passato, aggiorno la memoria; se non è passato, uso LAST_COST.
-  if(arguments.length > 0){
-    if(Number.isFinite(cost)){
-      LAST_COST = cost;
-    } else if(cost === null){
-      LAST_COST = null;
-    }
+function updateClientPriceDisplay(){
+  const mode = UI.markupMode ? UI.markupMode.value : 'RICARICO';
+  const pctRaw = UI.markupPct ? String(UI.markupPct.value).replace(',', '.') : '';
+  const pct = Number(pctRaw);
+  if(LAST_COST == null){
+    if(UI.outClientPrice) UI.outClientPrice.textContent = '—';
+    return null;
   }
-
-  const c = LAST_COST;
-  // Se non ho un costo valido, resetto il prezzo cliente
-  if(!Number.isFinite(c)){
-    UI.outClientPrice.textContent = '—';
-    return;
+  const price = computeClientPrice(LAST_COST, mode, pct);
+  if(price == null){
+    if(UI.outClientPrice) UI.outClientPrice.textContent = '—';
+    return null;
   }
-
-  const mode = UI.optMarkupMode.value; // 'markup' | 'margin'
-  const pct = parseFloat(String(UI.markupPct.value||'').replace(',', '.'));
-  if(!Number.isFinite(pct)){
-    UI.outClientPrice.textContent = '—';
-    return;
-  }
-
-  let price;
-  if(mode === 'margin'){
-    const m = pct / 100;
-    // Prezzo = Costo / (1 - m)
-    price = (1 - m) > 0 ? (c / (1 - m)) : NaN;
-  } else {
-    const r = pct / 100;
-    // Prezzo = Costo * (1 + r)
-    price = c * (1 + r);
-  }
-
-  UI.outClientPrice.textContent = Number.isFinite(price) ? fmtEUR(price) : '—';
+  if(UI.outClientPrice) UI.outClientPrice.textContent = moneyEUR(price);
+  return price;
 }
-
-
 
 function show(el, yes){ if(el) el.style.display = yes ? "" : "none"; }
 
@@ -211,16 +191,10 @@ function applyServiceUI(){
   show(UI.quintaliField, s === "GROUPAGE");
   show(UI.palletCountField, s === "GROUPAGE");
 
-  // Reset output per evitare valori "stale" quando si cambia servizio / preventivo
-  LAST_COST = null;
   if(UI.outAlerts) UI.outAlerts.innerHTML = "";
   if(UI.outCost) UI.outCost.textContent = "—";
-  if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
   if(UI.btnCopy) UI.btnCopy.disabled = true;
-  if(UI.outSummary) UI.outSummary.textContent = "";
-  if(UI.outDiag) UI.outDiag.textContent = "";
 }
-
 
 function searchArticles(q){
   const t = (q || "").trim().toLowerCase();
@@ -492,7 +466,7 @@ function computeGLS(){
   };
 }
 
-function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, clientPrice, rules, alerts, extraNote}){
+function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote}){
   const lines = [];
   lines.push(`SERVIZIO: ${service}`);
   lines.push(`DESTINAZIONE: ${province ? (province + " / ") : ""}${region || "—"}`);
@@ -514,7 +488,6 @@ function buildSummary({service, region, province, art, qty, palletType, lm, quin
 
   lines.push("");
   lines.push(`COSTO STIMATO: ${moneyEUR(cost)}`);
-  if(clientPrice){ lines.push(`PREZZO CLIENTE: ${moneyEUR(clientPrice)}`); }
   if(rules?.length) lines.push(`REGOLE: ${rules.join(" | ")}`);
 
   if(alerts?.length){
@@ -590,9 +563,10 @@ function onCalc(){
 
   UI.outText.textContent = summary;
   UI.outCost.textContent = moneyEUR(out.cost);
-  
-  const clientPrice = updateClientPriceDisplay(out.cost);
-UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
+  // Salvo ultimo costo e aggiorno prezzo cliente in tempo reale
+  LAST_COST = (out && Number.isFinite(out.cost)) ? out.cost : null;
+  updateClientPriceDisplay();
+  UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
   UI.btnCopy.disabled = !summary;
   UI.btnCopy.dataset.copy = summary;
@@ -616,97 +590,6 @@ async function onCopy(){
 }
 
 /* -------------------- INIT -------------------- */
-
-
-
-function liveRecalc(){
-  // Live: aggiorna costo + prezzo cliente quando ha senso, altrimenti azzera (niente valori "stale")
-  const service = UI.service?.value;
-  const art = UI.article?.value;
-
-  // Il prezzo cliente può cambiare anche solo modificando modalità/% (usa LAST_COST)
-  // (non passo cost => usa LAST_COST)
-  // NB: se LAST_COST è nullo, mostrerà "—"
-  updateClientPriceDisplay();
-
-  if(!service || !art){
-    LAST_COST = null;
-    if(UI.outCost) UI.outCost.textContent = "—";
-    if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
-    if(UI.btnCopy) UI.btnCopy.disabled = true;
-    return;
-  }
-
-  if(service === "PALLET"){
-    const region = UI.region?.value;
-    if(!region){
-      LAST_COST = null;
-      if(UI.outCost) UI.outCost.textContent = "—";
-      if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
-      if(UI.btnCopy) UI.btnCopy.disabled = true;
-      return;
-    }
-    onCalc();
-    return;
-  }
-
-  if(service === "GROUPAGE"){
-    const prov = UI.province?.value;
-    const lm = parseFloat(String(UI.lm?.value||'').replace(',', '.')) || 0;
-    const q = parseFloat(String(UI.quintali?.value||'').replace(',', '.')) || 0;
-    const pc = parseFloat(String(UI.palletCount?.value||'').replace(',', '.')) || 0;
-
-    // Per groupage la provincia è necessaria (tariffe per provincia)
-    if(!prov){
-      LAST_COST = null;
-      if(UI.outCost) UI.outCost.textContent = "—";
-      if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
-      if(UI.btnCopy) UI.btnCopy.disabled = true;
-      return;
-    }
-
-    // Se non hai ancora inserito nessun dato di carico, non calcolo (ma non lascio prezzi vecchi)
-    if(lm <= 0 && q <= 0 && pc <= 0){
-      LAST_COST = null;
-      if(UI.outCost) UI.outCost.textContent = "—";
-      if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
-      if(UI.btnCopy) UI.btnCopy.disabled = true;
-      return;
-    }
-
-    onCalc();
-    return;
-  }
-
-  // fallback
-  onCalc();
-}
-
-
-function bindLiveInputs(){
-  // Aggiorna in tempo reale:
-  // - costo (quando modifico i flag / parametri di trasporto)
-  // - prezzo cliente (quando modifico modalità/% e quando cambia il costo)
-  const triggers = [
-    UI.service, UI.region, UI.province, UI.article, UI.qty, UI.palletType,
-    UI.kmOver, UI.lm, UI.quintali, UI.palletCount,
-    UI.optDisagiata, UI.optPreavviso, UI.optAssicurazione, UI.optSponda,
-    UI.markupPct, UI.optMarkupMode
-  ].filter(Boolean);
-
-  triggers.forEach(el => {
-    const evt = (el.tagName === "INPUT" && (el.type === "checkbox" || el.type === "radio")) ? "change" : "input";
-    el.addEventListener(evt, () => {
-      if(LIVE_ENABLED) liveRecalc();
-    });
-    // Per select serve change
-    if(el.tagName === "SELECT"){
-      el.addEventListener("change", () => {
-        if(LIVE_ENABLED) liveRecalc();
-      });
-    }
-  });
-}
 
 async function init(){
   // PWA
@@ -766,12 +649,39 @@ async function init(){
   if(UI.quintali) UI.quintali.addEventListener("input", () => markTouched(UI.quintali));
   if(UI.palletCount) UI.palletCount.addEventListener("input", () => markTouched(UI.palletCount));
 
+  // Live recalcolo (debounced) per flag/input: non rompe la logica, richiama onCalc() in modo leggero
+  let __liveT = null;
+  function triggerLiveRecalc(){
+    if(__liveT) clearTimeout(__liveT);
+    __liveT = setTimeout(() => { try{ onCalc(); }catch(e){} }, 80);
+  }
+
   // Events
-  UI.service.addEventListener("change", applyServiceUI);
+  UI.service.addEventListener("change", () => {
+    applyServiceUI();
+    // reset costo/cliente quando cambio servizio
+    LAST_COST = null;
+    updateClientPriceDisplay();
+    triggerLiveRecalc();
+  });
   UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
   UI.article.addEventListener("change", onArticleChange);
   UI.btnCalc.addEventListener("click", onCalc);
   UI.btnCopy.addEventListener("click", onCopy);
+
+  // Prezzo cliente: aggiornamento immediato al cambio modalità/% (senza ricalcolare il costo)
+  if(UI.markupMode) UI.markupMode.addEventListener('change', () => updateClientPriceDisplay());
+  if(UI.markupPct)  UI.markupPct.addEventListener('input',  () => updateClientPriceDisplay());
+  if(UI.markupPct)  UI.markupPct.addEventListener('change', () => updateClientPriceDisplay());
+
+  // Flag/opzioni: ricalcolo costo + prezzo cliente in tempo reale
+  const flagEls = [UI.optPreavviso, UI.optAssicurazione, UI.optSponda, UI.chkZona, UI.distKm, UI.qty, UI.palletType, UI.region, UI.province, UI.article, UI.search];
+  flagEls.forEach(el => {
+    if(!el) return;
+    el.addEventListener('input',  () => triggerLiveRecalc());
+    el.addEventListener('change', () => triggerLiveRecalc());
+  });
+
 
   // Filter provinces when region changes
   UI.region.addEventListener("change", () => {
