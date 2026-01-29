@@ -2,11 +2,32 @@
 <html lang="it">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- iOS/Android: safe area + scaling ok -->
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Trasporti — Calcolo automatico</title>
+
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#111111">
   <link rel="stylesheet" href="styles.css">
+
+  <!-- iOS PWA hints -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Device mode: aggiunge .is-mobile o .is-desktop a <html> (solo UI) -->
+  <script>
+    (function(){
+      const isMobile =
+        window.matchMedia && window.matchMedia("(hover:none) and (pointer:coarse)").matches ||
+        Math.min(window.innerWidth, window.innerHeight) < 900;
+
+      document.documentElement.classList.toggle("is-mobile", !!isMobile);
+      document.documentElement.classList.toggle("is-desktop", !isMobile);
+
+      // Collassa Batch di default su mobile
+      window.__PWA_IS_MOBILE__ = !!isMobile;
+    })();
+  </script>
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-D0Y0T3JH6K"></script>
@@ -35,12 +56,22 @@
         <div class="subtitle">Calcolo automatico costi (PWA)</div>
       </div>
     </div>
-    <div class="status" id="pwaStatus">Offline-ready: …</div>
+
+    <div class="topbar-right">
+      <div class="status" id="pwaStatus">Offline-ready: …</div>
+
+      <!-- Mini-nav solo mobile (scorciatoie) -->
+      <nav class="quicknav" aria-label="Sezioni">
+        <a class="qbtn" href="#sec-dati">Dati</a>
+        <a class="qbtn" href="#sec-risultato">Risultato</a>
+        <a class="qbtn" href="#sec-batch">Batch</a>
+      </nav>
+    </div>
   </header>
 
   <main class="wrap">
     <!-- DATI SPEDIZIONE -->
-    <section class="card">
+    <section class="card" id="sec-dati">
       <h2>Dati spedizione</h2>
 
       <div class="grid">
@@ -77,7 +108,7 @@
 
         <label class="field">
           <span>Quantità</span>
-          <input id="qty" type="number" min="1" step="1" value="1">
+          <input id="qty" type="number" min="1" step="1" value="1" inputmode="numeric">
         </label>
 
         <label class="field" id="palletTypeField">
@@ -88,23 +119,23 @@
 
         <label class="field" id="lmField">
           <span>Metri lineari (Groupage)</span>
-          <input id="lm" type="number" min="0" step="0.1" value="0">
+          <input id="lm" type="number" min="0" step="0.1" value="0" inputmode="decimal">
         </label>
 
         <label class="field" id="quintaliField">
           <span>Quintali (Groupage)</span>
-          <input id="quintali" type="number" min="0" step="0.5" value="0">
+          <input id="quintali" type="number" min="0" step="0.5" value="0" inputmode="decimal">
         </label>
 
         <label class="field" id="palletCountField">
           <span>N° bancali (Groupage)</span>
-          <input id="palletCount" type="number" min="0" step="1" value="0">
+          <input id="palletCount" type="number" min="0" step="1" value="0" inputmode="numeric">
         </label>
 
         <!-- KM + DISAGIATA -->
         <label class="field">
           <span>Distanza oltre capoluogo (km)</span>
-          <input id="kmOver" type="number" min="0" step="1" value="0">
+          <input id="kmOver" type="number" min="0" step="1" value="0" inputmode="numeric">
         </label>
 
         <label class="field">
@@ -129,76 +160,88 @@
         </label>
       </div>
 
+      <!-- Azioni: su mobile diventano “sticky” -->
       <div class="actions">
         <button id="btnCalc">Calcola</button>
         <button id="btnCopy" class="secondary" disabled>Copia riepilogo</button>
       </div>
     </section>
 
-    <!-- BATCH / CONVERTITORI -->
-    <section class="card">
-      <h2>Batch / Convertitori</h2>
+    <!-- BATCH / CONVERTITORI (collassabile su mobile) -->
+    <section class="card" id="sec-batch">
+      <div class="section-head">
+        <h2>Batch / Convertitori</h2>
 
-      <div class="grid">
-        <label class="field">
-          <span>Import CSV articoli → genera articles.json</span>
-          <input id="fileArticlesCsv" type="file" accept=".csv,text/csv" />
-          <div class="hint">Usa il template: <code>data/template_articles.csv</code></div>
-        </label>
-
-        <label class="field">
-          <span>Import CSV Regioni→Province → genera geo_provinces.json</span>
-          <input id="fileGeoCsv" type="file" accept=".csv,text/csv" />
-          <div class="hint">Formato: <code>region,province</code> (una riga per provincia)</div>
-        </label>
-
-        <label class="field">
-          <span>Import CSV offerta (righe) → calcola trasporto batch</span>
-          <input id="fileOfferCsv" type="file" accept=".csv,text/csv" />
-          <div class="hint">
-            Colonne minime consigliate:
-            <code>code,qty,service,region,province,palletType,lm,quintali,palletCount,kmOver,disagiata</code>
-            <br>
-            service ammessi: <code>PALLET</code> oppure <code>GROUPAGE</code>.
-          </div>
-        </label>
-
-        <label class="field">
-          <span>Output</span>
-          <div class="checks">
-            <label><input type="checkbox" id="batchPickCheapest" checked>
-              Se service vuoto → scegli costo min (PALLET vs GROUPAGE)
-            </label>
-            <label><input type="checkbox" id="batchUseArticlePallet" checked>
-              Se palletType vuoto → usa quello dell’articolo
-            </label>
-          </div>
+        <!-- Toggle solo UI (non tocca logica) -->
+        <label class="batch-toggle" for="toggleBatch" title="Mostra/Nascondi Batch">
+          <span class="batch-toggle-label">Apri</span>
         </label>
       </div>
 
-      <div class="actions">
-        <button id="btnExportArticles" class="secondary" disabled>Scarica articles.json</button>
-        <button id="btnExportGeo" class="secondary" disabled>Scarica geo_provinces.json</button>
-        <button id="btnRunBatch" disabled>Calcola batch</button>
-        <button id="btnExportBatch" class="secondary" disabled>Scarica batch_result.csv</button>
-      </div>
+      <input type="checkbox" id="toggleBatch" class="toggleBatch" />
 
-      <div class="meta" style="margin-top:12px;">
-        <div class="label">Log batch</div>
-        <pre id="batchLog">—</pre>
+      <div class="batch-body" id="batchBody">
+        <div class="grid">
+          <label class="field">
+            <span>Import CSV articoli → genera articles.json</span>
+            <input id="fileArticlesCsv" type="file" accept=".csv,text/csv" />
+            <div class="hint">Usa il template: <code>data/template_articles.csv</code></div>
+          </label>
+
+          <label class="field">
+            <span>Import CSV Regioni→Province → genera geo_provinces.json</span>
+            <input id="fileGeoCsv" type="file" accept=".csv,text/csv" />
+            <div class="hint">Formato: <code>region,province</code> (una riga per provincia)</div>
+          </label>
+
+          <label class="field">
+            <span>Import CSV offerta (righe) → calcola trasporto batch</span>
+            <input id="fileOfferCsv" type="file" accept=".csv,text/csv" />
+            <div class="hint">
+              Colonne minime consigliate:
+              <code>code,qty,service,region,province,palletType,lm,quintali,palletCount,kmOver,disagiata</code>
+              <br>
+              service ammessi: <code>PALLET</code> oppure <code>GROUPAGE</code>.
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Output</span>
+            <div class="checks">
+              <label><input type="checkbox" id="batchPickCheapest" checked>
+                Se service vuoto → scegli costo min (PALLET vs GROUPAGE)
+              </label>
+              <label><input type="checkbox" id="batchUseArticlePallet" checked>
+                Se palletType vuoto → usa quello dell’articolo
+              </label>
+            </div>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="btnExportArticles" class="secondary" disabled>Scarica articles.json</button>
+          <button id="btnExportGeo" class="secondary" disabled>Scarica geo_provinces.json</button>
+          <button id="btnRunBatch" disabled>Calcola batch</button>
+          <button id="btnExportBatch" class="secondary" disabled>Scarica batch_result.csv</button>
+        </div>
+
+        <div class="meta" style="margin-top:12px;">
+          <div class="label">Log batch</div>
+          <pre id="batchLog">—</pre>
+        </div>
       </div>
     </section>
 
     <!-- RISULTATO -->
-    <section class="card">
+    <section class="card" id="sec-risultato">
       <h2>Risultato</h2>
+
       <div class="result">
         <div class="price">
           <div class="label">Costo stimato</div>
           <div class="value" id="outCost">—</div>
         </div>
 
-        <!-- ✅ TOGGLE + % -->
         <div class="price">
           <div class="label">Modalità</div>
           <select id="markupMode" style="width:100%; margin-top:6px;">
@@ -207,7 +250,7 @@
           </select>
 
           <div class="label" style="margin-top:10px;">Valore %</div>
-          <input id="markupPct" type="number" min="0" step="0.1" value="0" style="width:100%; margin-top:6px;">
+          <input id="markupPct" type="number" min="0" step="0.1" value="0" style="width:100%; margin-top:6px;" inputmode="decimal">
 
           <div class="hint" style="margin-top:6px;">
             Ricarico%: <span style="opacity:.85;">Prezzo = Costo × (1 + %)</span><br>
@@ -215,7 +258,6 @@
           </div>
         </div>
 
-        <!-- ✅ PREZZO CLIENTE -->
         <div class="price">
           <div class="label">Prezzo cliente</div>
           <div class="value" id="outClientPrice">—</div>
@@ -231,7 +273,7 @@
     </section>
 
     <!-- DIAGNOSTICA -->
-    <section class="card">
+    <section class="card" id="sec-debug">
       <h2>Diagnostica</h2>
       <div class="small">
         <div><b>Articolo:</b> <span id="dbgArticle">—</span></div>
@@ -245,6 +287,23 @@
     <span>PezzaliAPP style — PWA offline-first</span>
   </footer>
 
+  <script>
+    // Collassa Batch di default su mobile + testo toggle
+    (function(){
+      const t = document.getElementById("toggleBatch");
+      const lbl = document.querySelector(".batch-toggle-label");
+      if(!t || !lbl) return;
+
+      if (window.__PWA_IS_MOBILE__) t.checked = false;
+      else t.checked = true;
+
+      const sync = () => { lbl.textContent = t.checked ? "Chiudi" : "Apri"; };
+      t.addEventListener("change", sync);
+      sync();
+    })();
+  </script>
+
+  <!-- Logica invariata -->
   <script src="app.js"></script>
 </body>
 </html>
