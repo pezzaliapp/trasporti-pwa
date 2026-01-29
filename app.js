@@ -64,6 +64,38 @@ const UI = {
   batchLog: $("batchLog"),
 };
 
+// --- Pricing (Ricarico/Margine) + live updates ---
+const STATE = {
+  lastCost: null
+};
+
+function parsePct(v){
+  const n = Number(String(v ?? "").replace(",", ".").trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+function computeClientPrice(cost, mode, pct){
+  if(!Number.isFinite(cost)) return null;
+  const p = parsePct(pct);
+  if(p === null) return null;
+  const r = p/100;
+  if(mode === "markup"){ // Ricarico
+    return cost * (1 + r);
+  }
+  if(mode === "margin"){ // Margine
+    if(r >= 1) return null;
+    return cost / (1 - r);
+  }
+  return null;
+}
+
+function updateClientPrice(){
+  if(!UI.outClientPrice) return;
+  const price = computeClientPrice(STATE.lastCost, UI.markupMode?.value, UI.markupPct?.value);
+  UI.outClientPrice.textContent = (price === null) ? "—" : moneyEUR(price);
+}
+
+
 const MEM = {
   generatedArticlesJSON: null,
   generatedGeoJSON: null,
@@ -549,6 +581,8 @@ function onCalc(){
 
   UI.outText.textContent = summary;
   UI.outCost.textContent = moneyEUR(out.cost);
+  STATE.lastCost = (Number.isFinite(out.cost) ? out.cost : null);
+  updateClientPrice();
   UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
   UI.btnCopy.disabled = !summary;
@@ -660,6 +694,43 @@ async function init(){
   applyServiceUI();
   UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
   UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${(allProvincesFallback||[]).length}`;
+
+
+  // Pricing UI: recompute prezzo cliente when mode/% changes (no need to recalc transport)
+  if(UI.markupMode) UI.markupMode.addEventListener("change", updateClientPrice);
+  if(UI.markupPct) UI.markupPct.addEventListener("input", updateClientPrice);
+
+  // Live recalculation on flags / key inputs (debounced)
+  const debounce = (fn, ms=200) => {
+    let t = null;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), ms);
+    };
+  };
+
+  const onCalcLive = debounce(() => {
+    // Avoid running if nothing meaningful is selected yet
+    const hasArticle = UI.article?.value && UI.article.value !== "";
+    const hasRegion = UI.region?.value && UI.region.value !== "";
+    const hasService = UI.service?.value && UI.service.value !== "";
+    if(!hasService) return;
+    // For PALLET we need at least region + pallet type; for GROUPAGE need region+province (in your dataset) and article.
+    // If not enough data, let the normal validation show.
+    onCalc();
+  }, 220);
+
+  const liveEls = [
+    UI.service, UI.region, UI.province, UI.article, UI.qty,
+    UI.palletType, UI.lm, UI.quintali, UI.palletCount, UI.kmOver,
+    UI.optDisagiata, UI.optPreavviso, UI.optAssicurazione, UI.optSponda,
+    UI.extraNote
+  ].filter(Boolean);
+
+  liveEls.forEach(el => {
+    el.addEventListener("change", onCalcLive);
+    if(el.tagName === "INPUT") el.addEventListener("input", onCalcLive);
+  });
 }
 
 window.addEventListener("DOMContentLoaded", init);
