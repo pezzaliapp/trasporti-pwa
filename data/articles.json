@@ -105,7 +105,7 @@
     "name": "MEC 820 VDLL ( c/cod. 21100399 SOLL. AUTOMAT.)",
     "code": "MEC 820 VDLL ( c/cod. 21100399 SOLL. AUTOMAT.)",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "MEDIUM + 10%",
       "weightKg": 238.0,
       "dimsCm": [
         160.0,
@@ -125,7 +125,7 @@
     "name": "MEC 820 VDLL-P SONAR ( c/cod. 21100399 SOLL. AUTOMAT.)",
     "code": "MEC 820 VDLL-P SONAR ( c/cod. 21100399 SOLL. AUTOMAT.)",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "MEDIUM + 10%",
       "weightKg": 245.0,
       "dimsCm": [
         160.0,
@@ -363,7 +363,7 @@
     "name": "MEC 200 TRUCK / MEC 200A TRUCK",
     "code": "MEC 200 TRUCK / MEC 200A TRUCK",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "MEDIUM + 10%",
       "weightKg": 281.0,
       "dimsCm": [
         160.0,
@@ -383,7 +383,7 @@
     "name": "MEC 200-C TRUCK / MEC 200A-C TRUCK",
     "code": "MEC 200-C TRUCK / MEC 200A-C TRUCK",
     "pack": {
-      "palletType": "MEDIUM",
+      "palletType": "MEDIUM + 10%",
       "weightKg": 291.0,
       "dimsCm": [
         160.0,
