@@ -337,6 +337,9 @@ function onArticleChange(){
   } else {
     if(UI.optSponda) UI.optSponda.disabled = false;
   }
+
+  // aggiorna output in tempo reale dopo auto-fill
+  scheduleCalc();
 }
 
 /* -------------------- CALCOLO -------------------- */
@@ -535,7 +538,17 @@ function buildSummary({service, region, province, art, qty, palletType, lm, quin
 
 /* -------------------- UI ACTIONS -------------------- */
 
+let _calcTimer = null;
+function scheduleCalc(){
+  // Calcolo "live" (flag/inputs) senza martellare: piccolo debounce
+  if(_calcTimer) clearTimeout(_calcTimer);
+  _calcTimer = setTimeout(() => {
+    try { onCalc(); } catch(e) { /* noop */ }
+  }, 120);
+}
+
 function onCalc(){
+
   const service = UI.service.value;
 
   const region = normalizeRegion(UI.region.value);
@@ -695,6 +708,20 @@ async function init(){
   if(UI.btnCopy) UI.btnCopy.addEventListener("click", onCopy);
   if(UI.markupPct) UI.markupPct.addEventListener("input", onCalc);
   if(UI.markupMode) UI.markupMode.addEventListener("change", onCalc);
+
+  // Calcolo live: aggiornamento immediato quando cambi quantità/flag/parametri
+  if(UI.qty) UI.qty.addEventListener("input", scheduleCalc);
+  if(UI.palletType) UI.palletType.addEventListener("change", scheduleCalc);
+  if(UI.lm) UI.lm.addEventListener("input", scheduleCalc);
+  if(UI.quintali) UI.quintali.addEventListener("input", scheduleCalc);
+  if(UI.palletCount) UI.palletCount.addEventListener("input", scheduleCalc);
+
+  if(UI.kmOver) UI.kmOver.addEventListener("input", scheduleCalc);
+  if(UI.optDisagiata) UI.optDisagiata.addEventListener("change", scheduleCalc);
+  if(UI.optPreavviso) UI.optPreavviso.addEventListener("change", scheduleCalc);
+  if(UI.optAssicurazione) UI.optAssicurazione.addEventListener("change", scheduleCalc);
+  if(UI.optSponda) UI.optSponda.addEventListener("change", scheduleCalc);
+  if(UI.extraNote) UI.extraNote.addEventListener("input", scheduleCalc);
 
   // Province by region (FIX: usa normalizeRegion + reset provincia non valida)
   if(UI.region){
