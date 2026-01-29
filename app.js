@@ -1,7 +1,6 @@
-/* Trasporti PWA — logica base + Batch/Convertitori + GEO + km/disagiata + Ricarico/Margine
+/* Trasporti PWA — logica base + Batch/Convertitori + GEO + km/disagiata
    - Carica JSON (articoli + tariffe + geo province)
    - Calcolo: PALLET / GROUPAGE  (GLS disabilitato se non configurato)
-   - Province filtrate per Regione via geo_provinces.json (fix: reset provincia non valida)
 */
 
 const $ = (id) => document.getElementById(id);
@@ -13,7 +12,6 @@ let DB = {
 };
 
 let GEO = null; // geo_provinces.json (Regione -> Province)
-let allProvincesFallback = []; // popolato in init()
 
 const UI = {
   // Core
@@ -45,9 +43,6 @@ const UI = {
   btnCopy: $("btnCopy"),
 
   outCost: $("outCost"),
-  outClientPrice: $("outClientPrice"),
-  markupMode: $("markupMode"),
-  markupPct: $("markupPct"),
   outText: $("outText"),
   outAlerts: $("outAlerts"),
 
@@ -56,7 +51,7 @@ const UI = {
   dbgData: $("dbgData"),
   pwaStatus: $("pwaStatus"),
 
-  // Batch / Convertitori (UI presente ma gestione “light”)
+  // Batch / Convertitori
   fileArticlesCsv: $("fileArticlesCsv"),
   fileGeoCsv: $("fileGeoCsv"),
   fileOfferCsv: $("fileOfferCsv"),
@@ -72,7 +67,7 @@ const UI = {
 const MEM = {
   generatedArticlesJSON: null,
   generatedGeoJSON: null,
-  batchCSVResult: null,
+  batchCSVResult: null
 };
 
 function moneyEUR(v){
@@ -80,21 +75,20 @@ function moneyEUR(v){
   return new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(v);
 }
 
-function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
 
-function pctToFactor(pct){
-  return (parseFloat(pct) || 0) / 100;
-}
-
-function computeClientPrice(cost, mode, pct){
-  if(cost === null || cost === undefined || Number.isNaN(cost)) return null;
-  const p = pctToFactor(pct);
-  if(!mode || mode === "RICARICO"){
-    return round2(cost * (1 + p));
-  }
-  // MARGINE: Prezzo = Costo / (1 - p)
-  if(p >= 1) return null;
-  return round2(cost / (1 - p));
+function shouldForceGroupage(art){
+  if(!art) return false;
+  const r = art.rules || {};
+  const tags = (art.tags || []).map(t => String(t).toLowerCase());
+  // explicit flags coming from articles.json generation
+  if (r.forceService === "GROUPAGE" || r.onlyService === "GROUPAGE" || r.groupageOnly === true) return true;
+  // common tag hints
+  if (tags.includes("groupage") || tags.includes("parziale") || tags.includes("spedizione gls") || tags.includes("gls")) return true;
+  // heuristic: if we have groupage metrics but pallet is not explicitly defined, treat as groupage-first
+  const hasGroupageMetrics = (r.groupageLm != null) || (r.groupageQuintali != null) || (r.groupagePalletCount != null);
+  const hasPalletType = !!(art.palletType || (art.pack && art.pack.palletType));
+  if (hasGroupageMetrics && !hasPalletType) return true;
+  return false;
 }
 
 function show(el, yes){ if(el) el.style.display = yes ? "" : "none"; }
@@ -127,15 +121,15 @@ function fillSelect(select, items, {placeholder="— Seleziona —", valueKey=nu
   }
 }
 
-/* -------------------- NORMALIZZAZIONI (FIX PROVINCE) -------------------- */
+function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
 
 function normalizeProvince(p){
   const x = (p || "").trim().toUpperCase();
-  // compatibilità storica: se qualcuno usa CI, riportiamo a SU
-  if (x === "CI") return "SU";
+  if(x === "SU") return "CI";
   return x;
 }
 
+// ✅ NORMALIZZA REGIONE (per match con JSON in maiuscolo o nomi speciali)
 function normalizeRegion(r){
   return (r || "")
     .trim()
@@ -143,6 +137,7 @@ function normalizeRegion(r){
     .replace(/\s+/g, " ");
 }
 
+// ✅ NORMALIZZA CODICE ARTICOLO (MEC 820VDL == MEC820VDL)
 function normalizeCode(s){
   return (s || "")
     .toString()
@@ -151,8 +146,7 @@ function normalizeCode(s){
     .replace(/[^a-z0-9]/g, "");
 }
 
-/* -------------------- touched tracking -------------------- */
-
+// flags "touched" (non sovrascrivere se l’utente modifica a mano)
 function markTouched(el){
   if(!el) return;
   el.dataset.touched = "1";
@@ -165,8 +159,6 @@ function clearTouched(el){
   delete el.dataset.touched;
 }
 
-/* -------------------- UI -------------------- */
-
 function applyServiceUI(){
   const s = UI.service.value;
 
@@ -178,16 +170,7 @@ function applyServiceUI(){
 
   if(UI.outAlerts) UI.outAlerts.innerHTML = "";
   if(UI.outCost) UI.outCost.textContent = "—";
-  if(UI.outClientPrice) UI.outClientPrice.textContent = "—";
   if(UI.btnCopy) UI.btnCopy.disabled = true;
-}
-
-function addAlert(title, text){
-  if(!UI.outAlerts) return;
-  const div = document.createElement("div");
-  div.className = "alert";
-  div.innerHTML = `<b>${title}</b><div>${text}</div>`;
-  UI.outAlerts.appendChild(div);
 }
 
 function searchArticles(q){
@@ -225,37 +208,27 @@ function selectedArticle(){
   return DB.articles.find(a => a.id === id) || null;
 }
 
-/* -------------------- GEO: province per regione (FIX RESET) -------------------- */
-
-function refreshProvincesByRegion(){
-  const regKey = normalizeRegion(UI.region.value);
-  const allowed =
-    (GEO && regKey && GEO[regKey] && Array.isArray(GEO[regKey]))
-      ? GEO[regKey].map(normalizeProvince)
-      : null;
-
-  const prev = normalizeProvince(UI.province.value);
-
-  if(allowed && allowed.length){
-    fillSelect(UI.province, uniq(allowed), { placeholder: "— Seleziona Provincia —" });
-
-    // se la provincia precedente non è ammessa -> reset
-    if(prev && !allowed.includes(prev)){
-      UI.province.value = "";
-    } else if(prev) {
-      UI.province.value = prev;
-    }
-  } else {
-    fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
-    if(prev) UI.province.value = prev;
-  }
+function addAlert(title, text){
+  if(!UI.outAlerts) return;
+  const div = document.createElement("div");
+  div.className = "alert";
+  div.innerHTML = `<b>${title}</b><div>${text}</div>`;
+  UI.outAlerts.appendChild(div);
 }
 
 /* -------------------- GROUPAGE: RISOLUZIONE PROVINCE "RAGGRUPPATE" -------------------- */
-
+/* Esempi chiavi Excel:
+   - "FR LT"
+   - "RI VT RM"
+   - "BN-NA"
+   - "AV-SA"
+   - "MT / PZ"
+*/
 function tokenizeProvinceGroupKey(key){
   const raw = (key || "").toUpperCase();
+  // split su spazi, slash, trattini, virgole, punto e virgola
   const tokens = raw.split(/[\s\/,\-;]+/g).map(t => t.trim()).filter(Boolean);
+  // tieni solo token "tipo provincia" (2 lettere)
   return tokens.filter(t => /^[A-Z]{2}$/.test(t)).map(normalizeProvince);
 }
 
@@ -263,8 +236,10 @@ function resolveGroupageProvinceKey(province2){
   const prov = normalizeProvince(province2);
   const provinces = DB.groupageRates?.provinces || {};
 
+  // 1) match diretto
   if(provinces[prov]) return { key: prov, data: provinces[prov], matchedBy: "direct" };
 
+  // 2) match dentro chiavi raggruppate
   for(const k of Object.keys(provinces)){
     const toks = tokenizeProvinceGroupKey(k);
     if(toks.includes(prov)){
@@ -275,71 +250,42 @@ function resolveGroupageProvinceKey(province2){
   return null;
 }
 
-/* -------------------- AUTO-FILL DA ARTICOLO (Option B) -------------------- */
+/* -------------------- AUTO-FILL DA ARTICOLO -------------------- */
 
 function onArticleChange(){
   const art = selectedArticle();
   if(!art) return;
 
+  // ✅ se l’articolo ha pack.palletType, compila automaticamente PALLET TYPE
+  const pt = (art.pack?.palletType || "").trim();
+  if(pt && UI.palletType){
+    if(!isTouched(UI.palletType)){
+      UI.palletType.value = pt;
+    }
+  }
+
+  // ✅ AUTO-FILL GROUPAGE da rules (es. groupageLm)
   const r = art.rules || {};
-  const pack = art.pack || {};
-  const pt = (pack.palletType || "").trim();
-
-  // PALLET: auto taglia bancale (solo se non toccato a mano)
-  if(pt && UI.palletType && !isTouched(UI.palletType)){
-    UI.palletType.value = pt;
-  }
-
-  // GROUPAGE: compila SOLO se esplicitamente previsto (Option B)
   if(UI.service?.value === "GROUPAGE"){
-    const allowAuto =
-      !!r.groupageAutoFill ||
-      (r.groupageLm != null) ||
-      (r.groupageQuintali != null) ||
-      (r.groupagePalletCount != null);
-
-    if(!allowAuto){
-      if(UI.lm && !isTouched(UI.lm)) UI.lm.value = "0";
-      if(UI.quintali && !isTouched(UI.quintali)) UI.quintali.value = "0";
-      if(UI.palletCount && !isTouched(UI.palletCount)) UI.palletCount.value = "0";
-    } else {
-      if(r.groupageLm != null && UI.lm && !isTouched(UI.lm)){
-        UI.lm.value = String(r.groupageLm);
-      }
-
-      if(UI.quintali && !isTouched(UI.quintali)){
-        if(r.groupageQuintali != null){
-          UI.quintali.value = String(r.groupageQuintali);
-        } else if(pack.weightKg != null && !Number.isNaN(Number(pack.weightKg))){
-          UI.quintali.value = String(round2(Number(pack.weightKg) / 100));
-        }
-      }
-
-      if(UI.palletCount && !isTouched(UI.palletCount)){
-        if(r.groupagePalletCount != null){
-          UI.palletCount.value = String(r.groupagePalletCount);
-        } else if(pt){
-          // se c'è bancale “di fatto” e non specificato, default = 1
-          UI.palletCount.value = "1";
-        }
-      }
+    if(r.groupageLm != null && UI.lm && !isTouched(UI.lm)){
+      UI.lm.value = String(r.groupageLm);
     }
-
-    // noSponda -> disabilita sponda
-    if(UI.optSponda){
-      if(r.noSponda){
-        UI.optSponda.checked = false;
-        UI.optSponda.disabled = true;
-      } else {
-        UI.optSponda.disabled = false;
-      }
+    // se in futuro aggiungi: groupageQuintali / groupagePalletCount
+    if(r.groupageQuintali != null && UI.quintali && !isTouched(UI.quintali)){
+      UI.quintali.value = String(r.groupageQuintali);
     }
-  } else {
-    if(UI.optSponda) UI.optSponda.disabled = false;
+    if(r.groupagePalletCount != null && UI.palletCount && !isTouched(UI.palletCount)){
+      UI.palletCount.value = String(r.groupagePalletCount);
+    }
   }
 
-  // aggiorna output in tempo reale dopo auto-fill
-  scheduleCalc();
+  // ✅ forza servizio PALLET se stai su GLS o se service è vuoto
+  if(UI.service){
+    if(!UI.service.value || UI.service.value === "GLS"){
+      UI.service.value = "PALLET";
+      applyServiceUI();
+    }
+  }
 }
 
 /* -------------------- CALCOLO -------------------- */
@@ -375,7 +321,7 @@ function computePallet({region, palletType, qty, opts, art}){
   const alerts = [];
 
   if(!region) return { cost:null, rules:["Manca regione"], alerts:["Seleziona una regione."] };
-  if(!palletType) return { cost:null, rules:["Manca taglia bancale"], alerts:["Seleziona tipo bancale (MINI/QUARTER/HALF/... )."] };
+  if(!palletType) return { cost:null, rules:["Manca taglia bancale"], alerts:["Seleziona tipo bancale (QUARTER/HALF/MEDIUM/...)."] };
 
   const rate = DB.palletRates?.rates?.[region]?.[palletType];
   if(rate == null){
@@ -402,6 +348,7 @@ function computePallet({region, palletType, qty, opts, art}){
 
   base = applyKmAndDisagiata({ base, shipments, opts, rules, alerts, mode:"PALLET" });
 
+  // ✅ se l’articolo richiede preventivo, lo segnaliamo ma NON blocchiamo il calcolo
   if(art?.rules?.forceQuote){
     rules.push("forceQuote");
     alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo.");
@@ -478,6 +425,7 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
 
   base = applyKmAndDisagiata({ base, shipments:1, opts, rules, alerts, mode:"GROUPAGE" });
 
+  // ✅ se l’articolo richiede preventivo, lo segnaliamo ma NON blocchiamo il calcolo
   if(art?.rules?.forceQuote){
     rules.push("forceQuote");
     alerts.push(art.rules.forceQuoteReason || "Nota: quotazione/preventivo.");
@@ -486,6 +434,7 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
   return { cost: round2(base), rules, alerts };
 }
 
+// ✅ GLS: non c’è tariffario nel tuo Excel 2026 -> blocchiamo
 function computeGLS(){
   return {
     cost: null,
@@ -494,7 +443,7 @@ function computeGLS(){
   };
 }
 
-function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, clientPrice, markupMode, markupPct, rules, alerts, extraNote}){
+function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote}){
   const lines = [];
   lines.push(`SERVIZIO: ${service}`);
   lines.push(`DESTINAZIONE: ${province ? (province + " / ") : ""}${region || "—"}`);
@@ -516,15 +465,6 @@ function buildSummary({service, region, province, art, qty, palletType, lm, quin
 
   lines.push("");
   lines.push(`COSTO STIMATO: ${moneyEUR(cost)}`);
-
-  const pct = parseFloat(markupPct) || 0;
-  if(pct > 0){
-    lines.push(`${(markupMode === "MARGINE") ? "Margine" : "Ricarico"}: ${pct}%`);
-    lines.push(`PREZZO CLIENTE: ${moneyEUR(clientPrice)}`);
-  } else {
-    lines.push(`PREZZO CLIENTE: ${moneyEUR(cost)}`);
-  }
-
   if(rules?.length) lines.push(`REGOLE: ${rules.join(" | ")}`);
 
   if(alerts?.length){
@@ -536,19 +476,17 @@ function buildSummary({service, region, province, art, qty, palletType, lm, quin
   return lines.join("\n");
 }
 
-/* -------------------- UI ACTIONS -------------------- */
+/* -------------------- BATCH OFFERTA (fix match code) -------------------- */
 
-let _calcTimer = null;
-function scheduleCalc(){
-  // Calcolo "live" (flag/inputs) senza martellare: piccolo debounce
-  if(_calcTimer) clearTimeout(_calcTimer);
-  _calcTimer = setTimeout(() => {
-    try { onCalc(); } catch(e) { /* noop */ }
-  }, 120);
+function findArticleByCode(code){
+  const t = normalizeCode(code);
+  if(!t) return null;
+  return DB.articles.find(a => normalizeCode(a.code || "") === t) || null;
 }
 
-function onCalc(){
+/* -------------------- UI ACTIONS -------------------- */
 
+function onCalc(){
   const service = UI.service.value;
 
   const region = normalizeRegion(UI.region.value);
@@ -571,33 +509,27 @@ function onCalc(){
 
   const art = selectedArticle();
 
-  if(UI.dbgArticle){
-    UI.dbgArticle.textContent = art
-      ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0)
-      : "—";
-  }
+  UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0) : "—";
 
   let out;
   if(service === "PALLET"){
-    out = computePallet({ region, palletType, qty, opts, art });
+    if(shouldForceGroupage(art)){
+      out = {
+        cost: null,
+        rules: ["Servizio non compatibile: questo articolo va gestito in GROUPAGE/Parziale."],
+        alerts: ["Per questo articolo il Bancale non è applicabile. Seleziona GROUPAGE per il preventivo."],
+        details: { blockedService: "PALLET", suggestedService: "GROUPAGE" }
+      };
+    } else {
+      out = computePallet({ region, palletType, qty, opts, art });
+    }
   } else if(service === "GROUPAGE"){
     out = computeGroupage({ province, lm, quintali, palletCount, opts, art });
   } else {
     out = computeGLS();
   }
 
-  // prezzo cliente
-  const markupMode = UI.markupMode?.value || "RICARICO";
-  const markupPct = UI.markupPct?.value || "0";
-  const clientPrice = computeClientPrice(out.cost, markupMode, markupPct);
-
-  if(UI.outCost) UI.outCost.textContent = moneyEUR(out.cost);
-  if(UI.outClientPrice){
-    const pct = parseFloat(markupPct) || 0;
-    UI.outClientPrice.textContent = moneyEUR(pct > 0 ? clientPrice : out.cost);
-  }
-
-  if(UI.outAlerts) UI.outAlerts.innerHTML = "";
+  UI.outAlerts.innerHTML = "";
   (out.alerts || []).forEach(a => addAlert("Nota / Controllo", a));
 
   const summary = buildSummary({
@@ -610,25 +542,21 @@ function onCalc(){
     lm, quintali, palletCount,
     opts,
     cost: out.cost,
-    clientPrice,
-    markupMode,
-    markupPct,
     rules: out.rules || [],
     alerts: out.alerts || [],
     extraNote: UI.extraNote.value || ""
   });
 
-  if(UI.outText) UI.outText.textContent = summary;
-  if(UI.dbgRules) UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
+  UI.outText.textContent = summary;
+  UI.outCost.textContent = moneyEUR(out.cost);
+  UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
-  if(UI.btnCopy){
-    UI.btnCopy.disabled = !summary;
-    UI.btnCopy.dataset.copy = summary;
-  }
+  UI.btnCopy.disabled = !summary;
+  UI.btnCopy.dataset.copy = summary;
 }
 
 async function onCopy(){
-  const text = UI.btnCopy?.dataset.copy || "";
+  const text = UI.btnCopy.dataset.copy || "";
   if(!text) return;
   try{
     await navigator.clipboard.writeText(text);
@@ -651,12 +579,12 @@ async function init(){
   if ("serviceWorker" in navigator){
     try{
       await navigator.serviceWorker.register("sw.js");
-      if(UI.pwaStatus) UI.pwaStatus.textContent = "Offline-ready: sì";
-    } catch {
-      if(UI.pwaStatus) UI.pwaStatus.textContent = "Offline-ready: no";
+      UI.pwaStatus.textContent = "Offline-ready: sì";
+    } catch(e){
+      UI.pwaStatus.textContent = "Offline-ready: no";
     }
   } else {
-    if(UI.pwaStatus) UI.pwaStatus.textContent = "Offline-ready: n/d";
+    UI.pwaStatus.textContent = "Offline-ready: n/d";
   }
 
   // Load datasets
@@ -664,7 +592,7 @@ async function init(){
   DB.palletRates = await loadJSON("data/pallet_rates_by_region.json");
   DB.groupageRates = await loadJSON("data/groupage_rates.json");
 
-  // GEO
+  // GEO (province by region)
   try{
     GEO = await loadJSON("data/geo_provinces.json");
   } catch {
@@ -675,14 +603,18 @@ async function init(){
   const regions = DB.palletRates?.meta?.regions || Object.keys(DB.palletRates.rates || {});
   fillSelect(UI.region, regions, { placeholder: "— Seleziona Regione —" });
 
-  // Fallback provinces da chiavi groupage
+  // Provinces (UI: usa GEO se presente, altrimenti fallback)
+  // Fallback: prova a estrarre token (2 lettere) dalle chiavi groupage
   const provFromGroupageKeys = [];
   const groupKeys = Object.keys(DB.groupageRates?.provinces || {});
   for(const k of groupKeys){
     provFromGroupageKeys.push(...tokenizeProvinceGroupKey(k));
+    // se per caso hai anche province singole nel JSON:
     if(/^[A-Z]{2}$/.test(k.toUpperCase().trim())) provFromGroupageKeys.push(normalizeProvince(k));
   }
-  allProvincesFallback = uniq(provFromGroupageKeys);
+  const allProvincesFallback = uniq(provFromGroupageKeys);
+
+  // se GEO c'è, la lista province di default la prendiamo dal groupage (fallback) ma poi filtriamo su change regione
   fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
 
   // Pallet types
@@ -694,61 +626,40 @@ async function init(){
   // Articles
   renderArticleList("");
 
-  // touched tracking
+  // ✅ touched tracking (manual override)
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
   if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
   if(UI.quintali) UI.quintali.addEventListener("input", () => markTouched(UI.quintali));
   if(UI.palletCount) UI.palletCount.addEventListener("input", () => markTouched(UI.palletCount));
 
-  // Events core
-  if(UI.service) UI.service.addEventListener("change", () => { applyServiceUI(); onArticleChange(); });
-  if(UI.q) UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
-  if(UI.article) UI.article.addEventListener("change", () => { onArticleChange(); onCalc(); });
-  if(UI.btnCalc) UI.btnCalc.addEventListener("click", onCalc);
-  if(UI.btnCopy) UI.btnCopy.addEventListener("click", onCopy);
-  if(UI.markupPct) UI.markupPct.addEventListener("input", onCalc);
-  if(UI.markupMode) UI.markupMode.addEventListener("change", onCalc);
+  // Events
+  UI.service.addEventListener("change", applyServiceUI);
+  UI.q.addEventListener("input", () => renderArticleList(UI.q.value));
+  UI.article.addEventListener("change", onArticleChange);
+  UI.btnCalc.addEventListener("click", onCalc);
+  UI.btnCopy.addEventListener("click", onCopy);
 
-  // Calcolo live: aggiornamento immediato quando cambi quantità/flag/parametri
-  if(UI.qty) UI.qty.addEventListener("input", scheduleCalc);
-  if(UI.palletType) UI.palletType.addEventListener("change", scheduleCalc);
-  if(UI.lm) UI.lm.addEventListener("input", scheduleCalc);
-  if(UI.quintali) UI.quintali.addEventListener("input", scheduleCalc);
-  if(UI.palletCount) UI.palletCount.addEventListener("input", scheduleCalc);
+  // Filter provinces when region changes
+  UI.region.addEventListener("change", () => {
+    const regRaw = UI.region.value;
+    const reg = regRaw; // GEO potrebbe essere in formato diverso
+    const allowed = (GEO && reg && GEO[reg]) ? GEO[reg].map(normalizeProvince) : null;
 
-  if(UI.kmOver) UI.kmOver.addEventListener("input", scheduleCalc);
-  if(UI.optDisagiata) UI.optDisagiata.addEventListener("change", scheduleCalc);
-  if(UI.optPreavviso) UI.optPreavviso.addEventListener("change", scheduleCalc);
-  if(UI.optAssicurazione) UI.optAssicurazione.addEventListener("change", scheduleCalc);
-  if(UI.optSponda) UI.optSponda.addEventListener("change", scheduleCalc);
-  if(UI.extraNote) UI.extraNote.addEventListener("input", scheduleCalc);
+    if(allowed && allowed.length){
+      fillSelect(UI.province, uniq(allowed), { placeholder: "— Seleziona Provincia —" });
+    } else {
+      fillSelect(UI.province, allProvincesFallback, { placeholder: "— Seleziona Provincia —" });
+    }
+  });
 
-  // Province by region (FIX: usa normalizeRegion + reset provincia non valida)
-  if(UI.region){
-    UI.region.addEventListener("change", () => {
-      refreshProvincesByRegion();
-      onCalc();
-    });
-  }
-
-  if(UI.province){
-    UI.province.addEventListener("change", () => {
-      const v = normalizeProvince(UI.province.value);
-      if(UI.province.value !== v) UI.province.value = v;
-      onCalc();
-    });
-  }
-
-  // Applica filtro province già al primo load
-  refreshProvincesByRegion();
+  UI.province.addEventListener("change", () => {
+    const v = normalizeProvince(UI.province.value);
+    if(UI.province.value !== v) UI.province.value = v;
+  });
 
   applyServiceUI();
-
-  if(UI.outText) UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
-  if(UI.dbgData) UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${(allProvincesFallback||[]).length}`;
-
-  // primo calc “soft” (non obbligatorio, ma aggiorna prezzo cliente se markup > 0)
-  onCalc();
+  UI.outText.textContent = "Pronto. Seleziona servizio, destinazione e articolo, poi Calcola.";
+  UI.dbgData.textContent = `articoli=${DB.articles.length} | regioni=${regions.length} | province=${(allProvincesFallback||[]).length}`;
 }
 
 window.addEventListener("DOMContentLoaded", init);
