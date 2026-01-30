@@ -304,20 +304,33 @@
   </script>
 
   <script>
-    // Auto-refresh quando una nuova versione del Service Worker diventa attiva (anti-loop)
-    (function(){
+    // Auto-update PWA: forza check update + reload quando il nuovo SW prende controllo (robusto, anti-race)
+    (function () {
       if (!("serviceWorker" in navigator)) return;
 
       const KEY = "pwa_sw_reloaded";
-      let alreadyReloaded = sessionStorage.getItem(KEY) === "1";
 
+      // Reload quando cambia il controller (nuovo SW attivo e in controllo)
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (sessionStorage.getItem(KEY) === "1") return;
+        sessionStorage.setItem(KEY, "1");
+        window.location.reload();
+      });
+
+      // Forza il check di aggiornamento appena la pagina è caricata
+      window.addEventListener("load", async () => {
+        try {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) await reg.update();
+        } catch (e) { /* ignore */ }
+      });
+
+      // Fallback: se arriva anche il messaggio, ricarica (ma non dipende da questo)
       navigator.serviceWorker.addEventListener("message", (event) => {
         if (event.data && event.data.type === "SW_UPDATED") {
-          if (!alreadyReloaded) {
-            sessionStorage.setItem(KEY, "1");
-            alreadyReloaded = true;
-            window.location.reload();
-          }
+          if (sessionStorage.getItem(KEY) === "1") return;
+          sessionStorage.setItem(KEY, "1");
+          window.location.reload();
         }
       });
     })();
