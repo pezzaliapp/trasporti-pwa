@@ -303,6 +303,26 @@
     })();
   </script>
 
+  <script>
+    // Auto-refresh quando una nuova versione del Service Worker diventa attiva (anti-loop)
+    (function(){
+      if (!("serviceWorker" in navigator)) return;
+
+      const KEY = "pwa_sw_reloaded";
+      let alreadyReloaded = sessionStorage.getItem(KEY) === "1";
+
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "SW_UPDATED") {
+          if (!alreadyReloaded) {
+            sessionStorage.setItem(KEY, "1");
+            alreadyReloaded = true;
+            window.location.reload();
+          }
+        }
+      });
+    })();
+  </script>
+
   <!-- Logica invariata -->
   <script src="app.js"></script>
 </body>
