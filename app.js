@@ -934,12 +934,22 @@ function computePallet({region, palletType, qty, opts, art}){
 }
 
 function matchGroupageBracket(value, brackets){
-  for(const b of brackets){
+  // Returns { bracket, overflow }
+  // overflow=true when value exceeds the last defined max (we still return the last bracket)
+  if(!Array.isArray(brackets) || brackets.length===0) return { bracket:null, overflow:false };
+
+  // normalize
+  const bs = brackets.slice().sort((a,b)=>(a.min??0)-(b.min??0));
+
+  for(const b of bs){
     const okMin = value >= (b.min ?? 0);
     const okMax = (b.max == null) ? true : value <= b.max;
-    if(okMin && okMax) return b.price;
+    if(okMin && okMax) return { bracket:b, overflow:false };
   }
-  return null;
+
+  // If no bracket matched, value is likely above the highest max.
+  // Use the last bracket as a "cap" and signal overflow to the caller.
+  return { bracket: bs[bs.length-1], overflow:true };
 }
 
 function computeGroupage({province, lm, quintali, palletCount, opts, art}){
@@ -960,18 +970,35 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
   }
 
   const candidates = [];
+  let overflow = false;
 
   if(lm > 0 && Array.isArray(p.linearMeters)){
-    const price = matchGroupageBracket(lm, p.linearMeters);
-    if(price != null) candidates.push({mode:"lm", price});
+    const r = matchGroupageBracket(lm, p.linearMeters);
+    if(r.bracket && r.bracket.price != null){
+      candidates.push({ mode:"lm", price: r.bracket.price, overflow: r.overflow });
+      if(r.overflow) overflow = true;
+    }
   }
   if(quintali > 0 && Array.isArray(p.quintali)){
-    const price = matchGroupageBracket(quintali, p.quintali);
-    if(price != null) candidates.push({mode:"quintali", price});
+    const r = matchGroupageBracket(quintali, p.quintali);
+    if(r.bracket && r.bracket.price != null){
+      candidates.push({ mode:"quintali", price: r.bracket.price, overflow: r.overflow });
+      if(r.overflow) overflow = true;
+    }
   }
   if(palletCount > 0 && Array.isArray(p.pallets)){
-    const price = matchGroupageBracket(palletCount, p.pallets);
-    if(price != null) candidates.push({mode:"pallets", price});
+    const r = matchGroupageBracket(palletCount, p.pallets);
+    if(r.bracket && r.bracket.price != null){
+      candidates.push({ mode:"pallets", price: r.bracket.price, overflow: r.overflow });
+      if(r.overflow) overflow = true;
+    }
+  }
+
+  if(overflow){
+    // almeno uno dei parametri supera l'ultima fascia del listino.
+    // Manteniamo una stima usando l'ultima fascia disponibile, ma segnaliamo che serve preventivo.
+    alerts.push("Valori oltre fascia listino: stima calcolata a cap (consigliato preventivo).");
+    rules.push("overflow");
   }
 
   if(candidates.length === 0){
