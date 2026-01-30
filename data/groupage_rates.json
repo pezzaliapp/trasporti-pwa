@@ -6,7 +6,8 @@
     "liftgate_fee": null,
     "km_threshold": 30,
     "km_surcharge_per_km": 0,
-    "disagiata_surcharge": 0
+    "disagiata_surcharge": 0,
+    "selection_mode": "max"
   },
   "provinces": {
     "TO BI VB VC": {
