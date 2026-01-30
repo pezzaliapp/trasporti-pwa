@@ -719,11 +719,118 @@ function resolveGroupageProvinceKey(province2){
   return null;
 }
 
+
+/* -------------------- NOTE RULES (override servizio/opzioni) -------------------- */
+/*
+  Regole richieste:
+  - "NO SPONDA" da solo: NON forza groupage; disabilita solo la spunta Sponda.
+  - Se la nota contiene "GROUPAGE": forza servizio GROUPAGE.
+  - Se la nota contiene "X MT" (es. 3 MT): forza LM a X (solo se GROUPAGE forzato o se sei già in GROUPAGE).
+  - Se la nota contiene "quotazione" / "preventivo": segnala come "quotazione" (forceQuote).
+*/
+
+function getArticleNoteText(art){
+  if(!art) return "";
+  // supporta vari nomi di campo
+  const n =
+    art.note ?? art.notes ?? art.nota ?? art.Note ?? art.Notes ?? "";
+  return String(n || "").trim();
+}
+
+function parseNoteDirectives(noteText){
+  const t = String(noteText || "").toUpperCase();
+
+  const hasGroupage = t.includes("GROUPAGE");
+  const hasNoSponda = t.includes("NO SPONDA");
+  const hasOkSponda = t.includes("OK SPONDA"); // se presente, non blocchiamo la sponda
+
+  // Cerca "3 MT" / "3,5 MT"
+  let forceLm = null;
+  const m = t.match(/(\d+(?:[.,]\d+)?)\s*MT\b/);
+  if(m){
+    forceLm = Number(String(m[1]).replace(",", "."));
+    if(!Number.isFinite(forceLm)) forceLm = null;
+  }
+
+  const forceQuote = /QUOTAZIONE|PREVENTIVO/i.test(noteText || "");
+
+  return {
+    forceService: hasGroupage ? "GROUPAGE" : null,
+    forceLm,
+    forbidSponda: hasNoSponda && !hasOkSponda, // NO SPONDA blocca sponda (anche se non groupage)
+    forceQuote
+  };
+}
+
+function applyNoteOverridesToUI(art){
+  const note = getArticleNoteText(art);
+  const dir = parseNoteDirectives(note);
+
+  // 1) Sponda
+  if(UI.optSponda){
+    if(dir.forbidSponda){
+      UI.optSponda.checked = false;
+      UI.optSponda.disabled = true;
+    } else {
+      UI.optSponda.disabled = false;
+    }
+  }
+
+  // 2) Servizio
+  if(dir.forceService && UI.service && UI.service.value !== dir.forceService){
+    UI.service.value = dir.forceService;
+    applyServiceUI();
+  }
+
+  // 3) Metri lineari (solo se in GROUPAGE)
+  if(dir.forceLm != null && UI.service?.value === "GROUPAGE" && UI.lm){
+    // anche se "touched", qui è una regola di listino: sovrascriviamo
+    UI.lm.value = String(dir.forceLm);
+    // non marchiamo touched: è un valore imposto dalla regola
+    clearTouched(UI.lm);
+  }
+
+  // 4) forceQuote: la gestiamo nel calcolo (out.alerts). Qui nulla.
+  return dir;
+}
+
+function applyNoteOverridesToCalc({service, lm, opts, art}){
+  const note = getArticleNoteText(art);
+  const dir = parseNoteDirectives(note);
+
+  // Sponda
+  if(dir.forbidSponda){
+    opts.sponda = false;
+  }
+
+  // Servizio forzato
+  if(dir.forceService){
+    service = dir.forceService;
+  }
+
+  // LM forzati solo se groupage (forzato o selezionato)
+  if(dir.forceLm != null && service === "GROUPAGE"){
+    lm = dir.forceLm;
+  }
+
+  return { service, lm, opts, dir };
+}
+
 /* -------------------- AUTO-FILL DA ARTICOLO -------------------- */
 
 function onArticleChange(){
   const art = selectedArticle();
   if(!art) return;
+
+
+  // NOTE rules: forza servizio/opzioni secondo listino (NO SPONDA / GROUPAGE X MT / quotazione)
+  const __noteDir = applyNoteOverridesToUI(art);
+  // se "quotazione" in nota, aggiungiamo una reason leggibile (non client-facing)
+  if(__noteDir && __noteDir.forceQuote){
+    art.rules = art.rules || {};
+    art.rules.forceQuote = true;
+    art.rules.forceQuoteReason = art.rules.forceQuoteReason || "Nota articolo: quotazione/preventivo.";
+  }
 
   // ✅ se l’articolo ha pack.palletType, compila automaticamente PALLET TYPE
   const pt = (art.pack?.palletType || "").trim();
@@ -1030,13 +1137,51 @@ function onCalc(){
 
   const art = selectedArticle();
 
+  // NOTE rules: applica override di listino al calcolo (NO SPONDA non forza groupage; GROUPAGE forza servizio + LM se indicati)
+  let __svc = service;
+  let __lm = lm;
+  let __opts = opts;
+  let __dir = null;
+
+  if(art){
+    const adj = applyNoteOverridesToCalc({ service: __svc, lm: __lm, opts: __opts, art });
+    __svc = adj.service;
+    __lm = adj.lm;
+    __opts = adj.opts;
+    __dir = adj.dir;
+
+    if(__dir && __dir.forceQuote){
+      art.rules = art.rules || {};
+      art.rules.forceQuote = true;
+      art.rules.forceQuoteReason = art.rules.forceQuoteReason || "Nota articolo: quotazione/preventivo.";
+    }
+
+    // Se il servizio viene forzato, aggiorna anche la UI per coerenza
+    if(UI.service && UI.service.value !== __svc){
+      UI.service.value = __svc;
+      applyServiceUI();
+    }
+
+    // Se LM viene forzato in groupage, aggiorna anche i campi UI (non "touched")
+    if(__svc === "GROUPAGE" && __dir && __dir.forceLm != null && UI.lm){
+      UI.lm.value = String(__lm);
+      clearTouched(UI.lm);
+    }
+
+    // Sponda vietata => aggiorna UI
+    if(__dir && __dir.forbidSponda && UI.optSponda){
+      UI.optSponda.checked = false;
+      UI.optSponda.disabled = true;
+    }
+  }
+
   UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0) : "—";
 
   let out;
-  if(service === "PALLET"){
-    out = computePallet({ region, palletType, qty, opts, art });
-  } else if(service === "GROUPAGE"){
-    out = computeGroupage({ province, lm, quintali, palletCount, opts, art: (cartInfo?.baseId ? getArtById(cartInfo.baseId) : art) });
+  if(__svc === "PALLET"){
+    out = computePallet({ region, palletType, qty, opts: __opts, art });
+  } else if(__svc === "GROUPAGE"){
+    out = computeGroupage({ province, lm: __lm, quintali, palletCount, opts: __opts, art: (cartInfo?.baseId ? getArtById(cartInfo.baseId) : art) });
   } else {
     out = computeGLS();
   }
@@ -1045,14 +1190,14 @@ function onCalc(){
   (out.alerts || []).forEach(a => addAlert("Nota / Controllo", a));
 
   const summary = buildSummary({
-    service,
+    service: __svc,
     region,
     province,
     art,
     qty,
     palletType,
-    lm, quintali, palletCount,
-    opts,
+    lm: __lm, quintali, palletCount,
+    opts: __opts,
     cost: out.cost,
     rules: out.rules || [],
     alerts: out.alerts || [],
