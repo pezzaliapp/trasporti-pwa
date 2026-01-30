@@ -41,9 +41,6 @@ const UI = {
   extraNote: $("extraNote"),
   btnCalc: $("btnCalc"),
   btnCopy: $("btnCopy"),
-  btnShare: $("btnShare"),
-  btnShareWA: $("btnShareWA"),
-  btnExportTxt: $("btnExportTxt"),
   markupMode: $("markupMode"),
   markupPct: $("markupPct"),
   outClientPrice: $("outClientPrice"),
@@ -75,292 +72,6 @@ const MEM = {
   generatedGeoJSON: null,
   batchCSVResult: null
 };
-
-
-/* -------------------- GROUPAGE MULTI-CARICO (base + stackabili) -------------------- */
-/*
-  Obiettivo: per il groupage, poter aggiungere più articoli in un "carico" unico.
-  - scegli una BASE (pianale) -> determina i Metri Lineari a terra
-  - gli articoli "stackabili" non aumentano i LM a terra (ma sommano peso / bancali / quintali se presenti)
-  - gli articoli NON stackabili sommano LM a terra
-  - LM usati = max(LM base, somma LM non-stackabili)
-  - LM fatturati = arrotondamento a scatto (default 1.0m, leggibile da meta.lm_step se presente)
-
-  NOTA: non richiede modifiche a index.html: se gli elementi non esistono, li iniettiamo sotto al campo LM.
-*/
-
-const GROUPAGE_CART = []; // { artId, qty, stackable }
-let GROUPAGE_BASE_ID = null;
-
-function cartIsActive(){
-  return UI.service?.value === "GROUPAGE" && GROUPAGE_CART.length > 0;
-}
-
-function getArtById(id){
-  return DB.articles.find(a => a.id === id) || null;
-}
-
-function artGroupageParams(art){
-  // Ricava LM / quintali / bancali dall'articolo (rules.*) con fallback a 0
-  const r = art?.rules || {};
-  const lm = Number(r.groupageLm ?? 0) || 0;
-  const quintali = Number(r.groupageQuintali ?? 0) || 0;
-  const pallets = Number(r.groupagePalletCount ?? 0) || 0;
-  return { lm, quintali, pallets };
-}
-
-function groupageLmStep(){
-  const step = Number(DB.groupageRates?.meta?.lm_step ?? 1);
-  return (Number.isFinite(step) && step > 0) ? step : 1;
-}
-
-function roundUpToStep(v, step){
-  if(!Number.isFinite(v)) return 0;
-  const s = (Number.isFinite(step) && step > 0) ? step : 1;
-  return Math.ceil(v / s) * s;
-}
-
-function calcGroupageCartTotals(){
-  // Restituisce: { lmUsed, lmBill, quintaliTotal, palletsTotal, baseArt }
-  if(GROUPAGE_CART.length === 0){
-    return { lmUsed:0, lmBill:0, quintaliTotal:0, palletsTotal:0, baseArt:null };
-  }
-
-  const baseId = GROUPAGE_BASE_ID || GROUPAGE_CART[0].artId;
-  const baseEntry = GROUPAGE_CART.find(x => x.artId === baseId) || GROUPAGE_CART[0];
-  const baseArt = getArtById(baseEntry.artId);
-
-  // Base LM: trattiamo base come "una base fisica" (non moltiplichiamo per qty) perché in groupage tipicamente si ragiona per pianale.
-  // Se vuoi che qty moltiplichi LM base, basta cambiare lmBase = params.lm * baseEntry.qty
-  const baseParams = artGroupageParams(baseArt);
-  const lmBase = baseParams.lm;
-
-  let lmNonStack = 0;
-  let quintaliTotal = 0;
-  let palletsTotal = 0;
-
-  for(const it of GROUPAGE_CART){
-    const art = getArtById(it.artId);
-    const params = artGroupageParams(art);
-    const q = Math.max(1, parseInt(it.qty || 1, 10));
-
-    // Totali (somma)
-    quintaliTotal += (params.quintali * q);
-    palletsTotal += (params.pallets * q);
-
-    // LM a terra: solo per NON stackabili, esclusa la base
-    if(it.artId !== baseId){
-      if(!it.stackable){
-        lmNonStack += (params.lm * q);
-      }
-    }
-  }
-
-  const lmUsed = Math.max(lmBase, lmNonStack);
-  const lmBill = roundUpToStep(lmUsed, groupageLmStep());
-
-  return {
-    lmUsed: round2(lmUsed),
-    lmBill: round2(lmBill),
-    quintaliTotal: round2(quintaliTotal),
-    palletsTotal: round2(palletsTotal),
-    baseArt
-  };
-}
-
-/* -------------------- UI: BOX CARICO GROUPAGE (iniettato) -------------------- */
-
-function ensureGroupageCartUI(){
-  // Se non ho i campi base, esco
-  if(!UI.lmField || !$("groupageCartBox")){
-    // creo un box sotto LM
-    if(!UI.lmField) return;
-
-    const box = document.createElement("div");
-    box.id = "groupageCartBox";
-    box.className = "panel";
-    box.style.marginTop = "10px";
-    box.innerHTML = `
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <b>Carico Groupage</b>
-        <button type="button" id="btnAddToCarico" class="btn">Aggiungi articolo</button>
-        <button type="button" id="btnClearCarico" class="btn btn-ghost">Svuota</button>
-      </div>
-
-      <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-        <label style="display:flex; gap:6px; align-items:center;">
-          Base (pianale):
-          <select id="caricoBaseSelect"></select>
-        </label>
-
-        <span style="opacity:.8;">
-          LM usati: <b id="caricoLmUsed">0</b> • LM fatturati: <b id="caricoLmBill">0</b> • q.li tot: <b id="caricoQuintali">0</b> • bancali tot: <b id="caricoPallets">0</b>
-        </span>
-      </div>
-
-      <div id="caricoList" style="margin-top:8px;"></div>
-
-      <div style="margin-top:8px; font-size:12px; opacity:.85;">
-        Suggerimento: scegli come <b>Base</b> il macchinario più lungo (es. PFA 50). Metti <b>stackabile</b> su ciò che “sale sopra” (equilibratrice, assetto).
-      </div>
-    `;
-    UI.lmField.appendChild(box);
-  }
-
-  // bind
-  const btnAdd = $("btnAddToCarico");
-  const btnClear = $("btnClearCarico");
-  const baseSel = $("caricoBaseSelect");
-
-  if(btnAdd && !btnAdd.__bound){
-    btnAdd.__bound = true;
-    btnAdd.addEventListener("click", () => {
-      const art = selectedArticle();
-      const qty = Math.max(1, parseInt(UI.qty?.value || "1", 10) || 1);
-      if(!art) return;
-
-      const defaultStackable = (art.rules?.stackable === false) ? false : true;
-
-      const found = GROUPAGE_CART.find(x => x.artId === art.id);
-      if(found){
-        found.qty += qty;
-      } else {
-        GROUPAGE_CART.push({ artId: art.id, qty, stackable: defaultStackable });
-      }
-
-      if(!GROUPAGE_BASE_ID) GROUPAGE_BASE_ID = art.id;
-
-      renderGroupageCart();
-      try{ onCalc(); }catch(e){}
-    });
-  }
-
-  if(btnClear && !btnClear.__bound){
-    btnClear.__bound = true;
-    btnClear.addEventListener("click", () => {
-      GROUPAGE_CART.splice(0, GROUPAGE_CART.length);
-      GROUPAGE_BASE_ID = null;
-      renderGroupageCart();
-      try{ onCalc(); }catch(e){}
-    });
-  }
-
-  if(baseSel && !baseSel.__bound){
-    baseSel.__bound = true;
-    baseSel.addEventListener("change", () => {
-      GROUPAGE_BASE_ID = baseSel.value || null;
-      renderGroupageCart();
-      try{ onCalc(); }catch(e){}
-    });
-  }
-
-  renderGroupageCart();
-}
-
-function renderGroupageCart(){
-  const box = $("groupageCartBox");
-  if(!box) return;
-
-  const baseSel = $("caricoBaseSelect");
-  const list = $("caricoList");
-  const elLmUsed = $("caricoLmUsed");
-  const elLmBill = $("caricoLmBill");
-  const elQ = $("caricoQuintali");
-  const elP = $("caricoPallets");
-
-  // Popola select base
-  if(baseSel){
-    baseSel.innerHTML = "";
-    const o0 = document.createElement("option");
-    o0.value = "";
-    o0.textContent = "—";
-    baseSel.appendChild(o0);
-
-    for(const it of GROUPAGE_CART){
-      const art = getArtById(it.artId);
-      if(!art) continue;
-      const opt = document.createElement("option");
-      opt.value = it.artId;
-      opt.textContent = `${art.code ? art.code + " — " : ""}${art.name || it.artId}`;
-      baseSel.appendChild(opt);
-    }
-    baseSel.value = GROUPAGE_BASE_ID || "";
-  }
-
-  // Lista
-  if(list){
-    if(GROUPAGE_CART.length === 0){
-      list.innerHTML = `<div style="opacity:.75;">Nessun articolo nel carico. (Solo GROUPAGE: puoi aggiungere più articoli.)</div>`;
-    } else {
-      const rows = GROUPAGE_CART.map((it, idx) => {
-        const art = getArtById(it.artId);
-        const label = art ? `${art.brand ? art.brand+" — " : ""}${art.name}${art.code ? " · "+art.code : ""}` : it.artId;
-        const isBase = (it.artId === (GROUPAGE_BASE_ID || GROUPAGE_CART[0].artId));
-        const stackChecked = it.stackable ? "checked" : "";
-        return `
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:6px 0; border-bottom:1px solid rgba(0,0,0,.08);">
-            <span style="min-width:280px;"><b>${isBase ? "BASE" : ""}</b> ${escapeHtml(label)}</span>
-            <label style="display:flex; gap:6px; align-items:center;">
-              qta
-              <input type="number" min="1" step="1" value="${it.qty}" data-idx="${idx}" data-k="qty" style="width:72px;">
-            </label>
-            <label style="display:flex; gap:6px; align-items:center;">
-              stackabile
-              <input type="checkbox" ${stackChecked} data-idx="${idx}" data-k="stackable">
-            </label>
-            <button type="button" class="btn btn-ghost" data-idx="${idx}" data-k="rm">Rimuovi</button>
-          </div>
-        `;
-      }).join("");
-      list.innerHTML = rows;
-
-      // bind row events (delegation)
-      list.querySelectorAll("input,button").forEach(el => {
-        if(el.__bound) return;
-        el.__bound = true;
-
-        const idx = parseInt(el.getAttribute("data-idx"), 10);
-        const k = el.getAttribute("data-k");
-
-        if(k === "qty"){
-          el.addEventListener("input", () => {
-            const v = Math.max(1, parseInt(el.value || "1", 10) || 1);
-            GROUPAGE_CART[idx].qty = v;
-            renderGroupageCart();
-            try{ onCalc(); }catch(e){}
-          });
-        } else if(k === "stackable"){
-          el.addEventListener("change", () => {
-            GROUPAGE_CART[idx].stackable = !!el.checked;
-            renderGroupageCart();
-            try{ onCalc(); }catch(e){}
-          });
-        } else if(k === "rm"){
-          el.addEventListener("click", () => {
-            const removed = GROUPAGE_CART.splice(idx, 1);
-            if(removed && removed[0] && removed[0].artId === GROUPAGE_BASE_ID){
-              GROUPAGE_BASE_ID = GROUPAGE_CART[0]?.artId || null;
-            }
-            renderGroupageCart();
-            try{ onCalc(); }catch(e){}
-          });
-        }
-      });
-    }
-  }
-
-  // Totali
-  const t = calcGroupageCartTotals();
-  if(elLmUsed) elLmUsed.textContent = String(t.lmUsed || 0);
-  if(elLmBill) elLmBill.textContent = String(t.lmBill || 0);
-  if(elQ) elQ.textContent = String(t.quintaliTotal || 0);
-  if(elP) elP.textContent = String(t.palletsTotal || 0);
-}
-
-// semplice escape per label in HTML (evita problemi se nome ha < >)
-function escapeHtml(s){
-  return String(s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-}
 
 function moneyEUR(v){
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
@@ -402,162 +113,6 @@ function updateClientPriceDisplay(){
   if(UI.outClientPrice) UI.outClientPrice.textContent = moneyEUR(price);
   return price;
 }
-
-/* -------------------- SHARE (WhatsApp + TXT) -------------------- */
-/*
-  Obiettivo: inviare un report "client-ready" con:
-  - Servizio / Destinazione / Carico (se groupage multi-carico) / Opzioni / Note extra (se presenti)
-  - Totale: PREZZO CLIENTE (già calcolato) — senza citare ricarico/margine
-*/
-
-function enableShareButtons(enabled){
-  if(UI.btnShare) UI.btnShare.disabled = !enabled;
-  if(UI.btnShareWA) UI.btnShareWA.disabled = !enabled;
-  if(UI.btnExportTxt) UI.btnExportTxt.disabled = !enabled;
-}
-
-function buildClientReadyReport(){
-  const clientPrice = (UI.outClientPrice?.textContent || "").trim();
-  const raw = (UI.outText?.textContent || "").trim();
-
-  if(!raw || raw === "Carica dati…" || !clientPrice || clientPrice === "—") return "";
-
-  const lines = raw.split("\n").map(s => s.trim()).filter(Boolean);
-
-  const out = [];
-  out.push("*TRASPORTO — STIMA*");
-
-  for(const ln of lines){
-    const up = ln.toUpperCase();
-
-    if(up.startsWith("REGOLE:")) continue;
-    if(up.startsWith("ATTENZIONE:")) continue;
-    if(up.startsWith("COSTO STIMATO:")) continue;
-
-    if(up.includes("PROVINCIA") && up.includes("TARIFFATA")) continue;
-    if(up.startsWith("NOTA:")) continue;
-    if(up.startsWith("NOTA / CONTROLLO")) continue;
-
-    if(up.startsWith("SERVIZIO:")){
-      out.push(`Servizio: ${ln.split(":").slice(1).join(":").trim()}`);
-      continue;
-    }
-    if(up.startsWith("DESTINAZIONE:")){
-      out.push(`Destinazione: ${ln.split(":").slice(1).join(":").trim()}`);
-      continue;
-    }
-    if(up.startsWith("CARICO:")){
-      out.push(`Carico: ${ln.split(":").slice(1).join(":").trim()}`);
-      continue;
-    }
-
-    if(ln.startsWith("-")){
-      let s = ln.replace(/^\-\s*/, "• ");
-      s = s.replace(/\s*\[stack\]\s*/ig, "");
-      s = s.replace(/\s*\[BASE\]\s*/ig, " (Base)");
-      s = s.replace(/\s+/g, " ").trim();
-      out.push(s);
-      continue;
-    }
-
-    if(up.startsWith("GROUPAGE:")){
-      const rest = ln.split(":").slice(1).join(":").trim();
-      out.push(`Dati: ${rest}`);
-      continue;
-    }
-
-    if(up.startsWith("OPZIONI:")){
-      const rest = ln.split(":").slice(1).join(":").trim();
-      out.push(`Opzioni: ${rest || "nessuna"}`);
-      continue;
-    }
-
-    out.push(ln);
-  }
-
-  out.push("");
-  out.push(`*TOTALE: ${clientPrice}*`);
-
-  return out.slice(0, 40).join("\n").trim();
-}
-
-
-function shareViaWhatsApp(text){
-  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank", "noopener");
-}
-
-
-async function shareNative(text){
-  // Web Share API (mobile / iOS PWA). Fallback: copia negli appunti.
-  try{
-    if(navigator.share){
-      await navigator.share({ title: "Trasporto — Stima", text });
-      return;
-    }
-  }catch(e){
-    // user cancelled or not available -> fallback
-  }
-  try{
-    await navigator.clipboard.writeText(text);
-    // feedback leggero (senza alert invasivi)
-    
-  }catch(e){
-    // ultimo fallback: prompt
-    window.prompt("Copia il testo:", text);
-  }
-}
-
-function downloadTxt(text){
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
-  a.download = `trasporto-${ts}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function wireShareButtons(){
-  // Mostra "Condividi" solo se supportato (o comunque utile come copia negli appunti)
-  if(UI.btnShare){
-    // Se Web Share API non c'è, il bottone funziona come "copia negli appunti"
-    UI.btnShare.textContent = navigator.share ? "Condividi" : "Copia";
-    if(!UI.btnShare.__bound){
-      UI.btnShare.__bound = true;
-      UI.btnShare.addEventListener("click", async () => {
-        const txt = buildClientReadyReport();
-        if(!txt) return;
-        await shareNative(txt);
-      });
-    }
-  }
-
-  if(UI.btnShareWA && !UI.btnShareWA.__bound){
-    UI.btnShareWA.__bound = true;
-    UI.btnShareWA.addEventListener("click", () => {
-      const txt = buildClientReadyReport();
-      if(!txt) return;
-      shareViaWhatsApp(txt);
-    });
-  }
-
-  if(UI.btnExportTxt && !UI.btnExportTxt.__bound){
-    UI.btnExportTxt.__bound = true;
-    UI.btnExportTxt.addEventListener("click", () => {
-      const txt = buildClientReadyReport();
-      if(!txt) return;
-      downloadTxt(txt);
-    });
-  }
-
-  enableShareButtons(false);
-}
-
 
 function show(el, yes){ if(el) el.style.display = yes ? "" : "none"; }
 
@@ -639,7 +194,6 @@ function applyServiceUI(){
   if(UI.outAlerts) UI.outAlerts.innerHTML = "";
   if(UI.outCost) UI.outCost.textContent = "—";
   if(UI.btnCopy) UI.btnCopy.disabled = true;
-  enableShareButtons(false);
 }
 
 function searchArticles(q){
@@ -719,118 +273,11 @@ function resolveGroupageProvinceKey(province2){
   return null;
 }
 
-
-/* -------------------- NOTE RULES (override servizio/opzioni) -------------------- */
-/*
-  Regole richieste:
-  - "NO SPONDA" da solo: NON forza groupage; disabilita solo la spunta Sponda.
-  - Se la nota contiene "GROUPAGE": forza servizio GROUPAGE.
-  - Se la nota contiene "X MT" (es. 3 MT): forza LM a X (solo se GROUPAGE forzato o se sei già in GROUPAGE).
-  - Se la nota contiene "quotazione" / "preventivo": segnala come "quotazione" (forceQuote).
-*/
-
-function getArticleNoteText(art){
-  if(!art) return "";
-  // supporta vari nomi di campo
-  const n =
-    art.note ?? art.notes ?? art.nota ?? art.Note ?? art.Notes ?? "";
-  return String(n || "").trim();
-}
-
-function parseNoteDirectives(noteText){
-  const t = String(noteText || "").toUpperCase();
-
-  const hasGroupage = t.includes("GROUPAGE");
-  const hasNoSponda = t.includes("NO SPONDA");
-  const hasOkSponda = t.includes("OK SPONDA"); // se presente, non blocchiamo la sponda
-
-  // Cerca "3 MT" / "3,5 MT"
-  let forceLm = null;
-  const m = t.match(/(\d+(?:[.,]\d+)?)\s*MT\b/);
-  if(m){
-    forceLm = Number(String(m[1]).replace(",", "."));
-    if(!Number.isFinite(forceLm)) forceLm = null;
-  }
-
-  const forceQuote = /QUOTAZIONE|PREVENTIVO/i.test(noteText || "");
-
-  return {
-    forceService: hasGroupage ? "GROUPAGE" : null,
-    forceLm,
-    forbidSponda: hasNoSponda && !hasOkSponda, // NO SPONDA blocca sponda (anche se non groupage)
-    forceQuote
-  };
-}
-
-function applyNoteOverridesToUI(art){
-  const note = getArticleNoteText(art);
-  const dir = parseNoteDirectives(note);
-
-  // 1) Sponda
-  if(UI.optSponda){
-    if(dir.forbidSponda){
-      UI.optSponda.checked = false;
-      UI.optSponda.disabled = true;
-    } else {
-      UI.optSponda.disabled = false;
-    }
-  }
-
-  // 2) Servizio
-  if(dir.forceService && UI.service && UI.service.value !== dir.forceService){
-    UI.service.value = dir.forceService;
-    applyServiceUI();
-  }
-
-  // 3) Metri lineari (solo se in GROUPAGE)
-  if(dir.forceLm != null && UI.service?.value === "GROUPAGE" && UI.lm){
-    // anche se "touched", qui è una regola di listino: sovrascriviamo
-    UI.lm.value = String(dir.forceLm);
-    // non marchiamo touched: è un valore imposto dalla regola
-    clearTouched(UI.lm);
-  }
-
-  // 4) forceQuote: la gestiamo nel calcolo (out.alerts). Qui nulla.
-  return dir;
-}
-
-function applyNoteOverridesToCalc({service, lm, opts, art}){
-  const note = getArticleNoteText(art);
-  const dir = parseNoteDirectives(note);
-
-  // Sponda
-  if(dir.forbidSponda){
-    opts.sponda = false;
-  }
-
-  // Servizio forzato
-  if(dir.forceService){
-    service = dir.forceService;
-  }
-
-  // LM forzati solo se groupage (forzato o selezionato)
-  if(dir.forceLm != null && service === "GROUPAGE"){
-    lm = dir.forceLm;
-  }
-
-  return { service, lm, opts, dir };
-}
-
 /* -------------------- AUTO-FILL DA ARTICOLO -------------------- */
 
 function onArticleChange(){
   const art = selectedArticle();
   if(!art) return;
-
-
-  // NOTE rules: forza servizio/opzioni secondo listino (NO SPONDA / GROUPAGE X MT / quotazione)
-  const __noteDir = applyNoteOverridesToUI(art);
-  // se "quotazione" in nota, aggiungiamo una reason leggibile (non client-facing)
-  if(__noteDir && __noteDir.forceQuote){
-    art.rules = art.rules || {};
-    art.rules.forceQuote = true;
-    art.rules.forceQuoteReason = art.rules.forceQuoteReason || "Nota articolo: quotazione/preventivo.";
-  }
 
   // ✅ se l’articolo ha pack.palletType, compila automaticamente PALLET TYPE
   const pt = (art.pack?.palletType || "").trim();
@@ -855,7 +302,14 @@ function onArticleChange(){
     }
   }
 
-  // ✅ forza servizio PALLET se stai su GLS o se service è vuoto
+  // ✅ forza servizio se l'articolo lo richiede (es. ATTREZZATURA -> PALLET)
+  const forcedSvc = (art.rules && art.rules.forceService) ? String(art.rules.forceService).toUpperCase() : "";
+  if(forcedSvc && UI.service){
+    UI.service.value = forcedSvc;
+    applyServiceUI();
+  }
+
+  // ✅ fallback: forza servizio PALLET se stai su GLS o se service è vuoto
   if(UI.service){
     if(!UI.service.value || UI.service.value === "GLS"){
       UI.service.value = "PALLET";
@@ -934,22 +388,12 @@ function computePallet({region, palletType, qty, opts, art}){
 }
 
 function matchGroupageBracket(value, brackets){
-  // Returns { bracket, overflow }
-  // overflow=true when value exceeds the last defined max (we still return the last bracket)
-  if(!Array.isArray(brackets) || brackets.length===0) return { bracket:null, overflow:false };
-
-  // normalize
-  const bs = brackets.slice().sort((a,b)=>(a.min??0)-(b.min??0));
-
-  for(const b of bs){
+  for(const b of brackets){
     const okMin = value >= (b.min ?? 0);
     const okMax = (b.max == null) ? true : value <= b.max;
-    if(okMin && okMax) return { bracket:b, overflow:false };
+    if(okMin && okMax) return b.price;
   }
-
-  // If no bracket matched, value is likely above the highest max.
-  // Use the last bracket as a "cap" and signal overflow to the caller.
-  return { bracket: bs[bs.length-1], overflow:true };
+  return null;
 }
 
 function computeGroupage({province, lm, quintali, palletCount, opts, art}){
@@ -970,35 +414,18 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
   }
 
   const candidates = [];
-  let overflow = false;
 
   if(lm > 0 && Array.isArray(p.linearMeters)){
-    const r = matchGroupageBracket(lm, p.linearMeters);
-    if(r.bracket && r.bracket.price != null){
-      candidates.push({ mode:"lm", price: r.bracket.price, overflow: r.overflow });
-      if(r.overflow) overflow = true;
-    }
+    const price = matchGroupageBracket(lm, p.linearMeters);
+    if(price != null) candidates.push({mode:"lm", price});
   }
   if(quintali > 0 && Array.isArray(p.quintali)){
-    const r = matchGroupageBracket(quintali, p.quintali);
-    if(r.bracket && r.bracket.price != null){
-      candidates.push({ mode:"quintali", price: r.bracket.price, overflow: r.overflow });
-      if(r.overflow) overflow = true;
-    }
+    const price = matchGroupageBracket(quintali, p.quintali);
+    if(price != null) candidates.push({mode:"quintali", price});
   }
   if(palletCount > 0 && Array.isArray(p.pallets)){
-    const r = matchGroupageBracket(palletCount, p.pallets);
-    if(r.bracket && r.bracket.price != null){
-      candidates.push({ mode:"pallets", price: r.bracket.price, overflow: r.overflow });
-      if(r.overflow) overflow = true;
-    }
-  }
-
-  if(overflow){
-    // almeno uno dei parametri supera l'ultima fascia del listino.
-    // Manteniamo una stima usando l'ultima fascia disponibile, ma segnaliamo che serve preventivo.
-    alerts.push("Valori oltre fascia listino: stima calcolata a cap (consigliato preventivo).");
-    rules.push("overflow");
+    const price = matchGroupageBracket(palletCount, p.pallets);
+    if(price != null) candidates.push({mode:"pallets", price});
   }
 
   if(candidates.length === 0){
@@ -1009,20 +436,9 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
     };
   }
 
-  // Selezione tariffa: per groupage normalmente si applica il vincolo PIÙ penalizzante
-  // (LM / quintali / bancali). Default: MAX. Puoi forzare MIN via groupage_rates.json -> meta.selection_mode="min".
-  const selectionMode = (DB.groupageRates?.meta?.selection_mode || "max").toLowerCase();
-
-  let picked;
-  if(selectionMode === "min"){
-    picked = candidates.reduce((best, cur) => (best==null || cur.price < best.price) ? cur : best, null);
-    rules.push(`pick:min:${picked.mode}`);
-  } else {
-    picked = candidates.reduce((worst, cur) => (worst==null || cur.price > worst.price) ? cur : worst, null);
-    rules.push(`pick:max:${picked.mode}`);
-  }
-
-  let base = picked.price;
+  candidates.sort((a,b)=>a.price-b.price);
+  let base = candidates[0].price;
+  rules.push(`best:${candidates[0].mode}`);
 
   if(opts.sponda && DB.groupageRates?.meta?.liftgate_fee != null){
     base += DB.groupageRates.meta.liftgate_fee;
@@ -1057,21 +473,12 @@ function computeGLS(){
   };
 }
 
-function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote, cartInfo}){
+function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote}){
   const lines = [];
   lines.push(`SERVIZIO: ${service}`);
   lines.push(`DESTINAZIONE: ${province ? (province + " / ") : ""}${region || "—"}`);
-
-  // Se è attivo il carico groupage multi-articolo, riepilogo dettagliato
-  if(service === "GROUPAGE" && cartInfo && Array.isArray(cartInfo.items) && cartInfo.items.length){
-    lines.push(`CARICO: ${cartInfo.items.length} articoli`);
-    for(const it of cartInfo.items){
-      lines.push(`- ${it.label} x${it.qty}${it.isBase ? " [BASE]" : ""}${it.stackable ? " [stack]" : ""}`);
-    }
-  } else {
-    lines.push(`ARTICOLO: ${art ? `${art.brand || ""} ${art.name} (${art.code || art.id})`.trim() : "—"}`);
-    lines.push(`QTA: ${qty}`);
-  }
+  lines.push(`ARTICOLO: ${art ? `${art.brand || ""} ${art.name} (${art.code || art.id})`.trim() : "—"}`);
+  lines.push(`QTA: ${qty}`);
 
   if(service === "PALLET") lines.push(`Bancale: ${palletType || "—"}`);
   if(service === "GROUPAGE") lines.push(`Groupage: LM=${lm} | q.li=${quintali} | plt=${palletCount}`);
@@ -1110,7 +517,15 @@ function findArticleByCode(code){
 /* -------------------- UI ACTIONS -------------------- */
 
 function onCalc(){
-  const service = UI.service.value;
+  let service = UI.service.value;
+
+  const art0 = selectedArticle && selectedArticle();
+  const forcedSvc = (art0 && art0.rules && art0.rules.forceService) ? String(art0.rules.forceService).toUpperCase() : "";
+  if(forcedSvc && forcedSvc !== service){
+    service = forcedSvc;
+    if(UI.service) UI.service.value = forcedSvc;
+    applyServiceUI();
+  }
 
   const region = normalizeRegion(UI.region.value);
   const province = normalizeProvince(UI.province.value);
@@ -1118,41 +533,9 @@ function onCalc(){
   const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
   const palletType = (UI.palletType.value || "").trim();
 
-  let lm = parseFloat(UI.lm.value || "0");
-  let quintali = parseFloat(UI.quintali.value || "0");
-  let palletCount = parseFloat(UI.palletCount.value || "0");
-
-  // ✅ GROUPAGE multi-carico: se ho articoli nel carico, calcolo LM/q.li/bancali dal carico
-  let cartInfo = null;
-  if(UI.service.value === "GROUPAGE" && GROUPAGE_CART.length){
-    const t = calcGroupageCartTotals();
-    // Forziamo i campi in modo trasparente (utile anche per copia/incolla screenshot)
-    if(UI.lm && !isTouched(UI.lm)) UI.lm.value = String(t.lmBill || 0);
-    if(UI.quintali && !isTouched(UI.quintali)) UI.quintali.value = String(t.quintaliTotal || 0);
-    if(UI.palletCount && !isTouched(UI.palletCount)) UI.palletCount.value = String(t.palletsTotal || 0);
-
-    lm = Number(t.lmBill || 0);
-    quintali = Number(t.quintaliTotal || 0);
-    palletCount = Number(t.palletsTotal || 0);
-
-    cartInfo = {
-      lmUsed: t.lmUsed,
-      lmBill: t.lmBill,
-      quintaliTotal: t.quintaliTotal,
-      palletsTotal: t.palletsTotal,
-      baseId: GROUPAGE_BASE_ID || GROUPAGE_CART[0].artId,
-      items: GROUPAGE_CART.map(it => {
-        const a = getArtById(it.artId);
-        return {
-          id: it.artId,
-          qty: it.qty,
-          stackable: !!it.stackable,
-          isBase: it.artId === (GROUPAGE_BASE_ID || GROUPAGE_CART[0].artId),
-          label: a ? `${a.brand ? a.brand + " — " : ""}${a.name}${a.code ? " · " + a.code : ""}` : it.artId
-        };
-      })
-    };
-  }
+  const lm = parseFloat(UI.lm.value || "0");
+  const quintali = parseFloat(UI.quintali.value || "0");
+  const palletCount = parseFloat(UI.palletCount.value || "0");
 
   const opts = {
     preavviso: !!UI.optPreavviso.checked,
@@ -1164,51 +547,13 @@ function onCalc(){
 
   const art = selectedArticle();
 
-  // NOTE rules: applica override di listino al calcolo (NO SPONDA non forza groupage; GROUPAGE forza servizio + LM se indicati)
-  let __svc = service;
-  let __lm = lm;
-  let __opts = opts;
-  let __dir = null;
-
-  if(art){
-    const adj = applyNoteOverridesToCalc({ service: __svc, lm: __lm, opts: __opts, art });
-    __svc = adj.service;
-    __lm = adj.lm;
-    __opts = adj.opts;
-    __dir = adj.dir;
-
-    if(__dir && __dir.forceQuote){
-      art.rules = art.rules || {};
-      art.rules.forceQuote = true;
-      art.rules.forceQuoteReason = art.rules.forceQuoteReason || "Nota articolo: quotazione/preventivo.";
-    }
-
-    // Se il servizio viene forzato, aggiorna anche la UI per coerenza
-    if(UI.service && UI.service.value !== __svc){
-      UI.service.value = __svc;
-      applyServiceUI();
-    }
-
-    // Se LM viene forzato in groupage, aggiorna anche i campi UI (non "touched")
-    if(__svc === "GROUPAGE" && __dir && __dir.forceLm != null && UI.lm){
-      UI.lm.value = String(__lm);
-      clearTouched(UI.lm);
-    }
-
-    // Sponda vietata => aggiorna UI
-    if(__dir && __dir.forbidSponda && UI.optSponda){
-      UI.optSponda.checked = false;
-      UI.optSponda.disabled = true;
-    }
-  }
-
   UI.dbgArticle.textContent = art ? JSON.stringify({id:art.id, code:art.code, pack:art.pack || {}, rules: art.rules || {}}, null, 0) : "—";
 
   let out;
-  if(__svc === "PALLET"){
-    out = computePallet({ region, palletType, qty, opts: __opts, art });
-  } else if(__svc === "GROUPAGE"){
-    out = computeGroupage({ province, lm: __lm, quintali, palletCount, opts: __opts, art: (cartInfo?.baseId ? getArtById(cartInfo.baseId) : art) });
+  if(service === "PALLET"){
+    out = computePallet({ region, palletType, qty, opts, art });
+  } else if(service === "GROUPAGE"){
+    out = computeGroupage({ province, lm, quintali, palletCount, opts, art });
   } else {
     out = computeGLS();
   }
@@ -1217,29 +562,25 @@ function onCalc(){
   (out.alerts || []).forEach(a => addAlert("Nota / Controllo", a));
 
   const summary = buildSummary({
-    service: __svc,
+    service,
     region,
     province,
     art,
     qty,
     palletType,
-    lm: __lm, quintali, palletCount,
-    opts: __opts,
+    lm, quintali, palletCount,
+    opts,
     cost: out.cost,
     rules: out.rules || [],
     alerts: out.alerts || [],
-    extraNote: UI.extraNote.value || "",
-    cartInfo
+    extraNote: UI.extraNote.value || ""
   });
 
   UI.outText.textContent = summary;
   UI.outCost.textContent = moneyEUR(out.cost);
   // Salvo ultimo costo e aggiorno prezzo cliente in tempo reale
   LAST_COST = (out && Number.isFinite(out.cost)) ? out.cost : null;
-  const __clientPrice = updateClientPriceDisplay();
-  // Abilita share solo se esiste un report client-ready valido
-  enableShareButtons(!!(__clientPrice && buildClientReadyReport()));
-
+  updateClientPriceDisplay();
   UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
   UI.btnCopy.disabled = !summary;
@@ -1317,12 +658,6 @@ async function init(){
   // Articles
   renderArticleList("");
 
-  // Groupage multi-carico UI (iniettato sotto il campo LM)
-  ensureGroupageCartUI();
-
-  // Share buttons (WhatsApp + TXT)
-  wireShareButtons();
-
   // ✅ touched tracking (manual override)
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
   if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
@@ -1339,7 +674,6 @@ async function init(){
   // Events
   UI.service.addEventListener("change", () => {
     applyServiceUI();
-    ensureGroupageCartUI();
     // reset costo/cliente quando cambio servizio
     LAST_COST = null;
     updateClientPriceDisplay();
