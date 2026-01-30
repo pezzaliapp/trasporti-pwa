@@ -46,6 +46,22 @@
           y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
       })(window, document, "clarity", "script", "v8o4vl5wxo");
   </script>
+
+  <style>
+    .share-actions{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+    .share-actions .sharebtn{
+      border:0;
+      padding:10px 14px;
+      border-radius:12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .share-actions .sharebtn:disabled{opacity:.45; cursor:not-allowed;}
+    .share-actions .btn-native{background:#b28cff; color:#111;}
+    .share-actions .btn-wa{background:#25D366; color:#111;}
+    .share-actions .btn-txt{background:#4da3ff; color:#111;}
+  </style>
+
 </head>
 <body>
   <header class="topbar">
@@ -267,10 +283,10 @@
           <div class="label">Riepilogo</div>
           <pre id="outText">Carica dati…</pre>
 
-          <div class="share-actions" style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-            <button id="btnShare" class="secondary" disabled>Condividi</button>
-            <button id="btnShareWA" class="secondary" disabled>Invia via WhatsApp</button>
-            <button id="btnExportTxt" class="secondary" disabled>Scarica TXT</button>
+          <div class="share-actions">
+            <button id="btnShare" class="sharebtn btn-native" disabled>Condividi</button>
+            <button id="btnShareWA" class="sharebtn btn-wa" disabled>WhatsApp</button>
+            <button id="btnExportTxt" class="sharebtn btn-txt" disabled>TXT</button>
           </div>
         </div>
       </div>

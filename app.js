@@ -417,44 +417,70 @@ function enableShareButtons(enabled){
 }
 
 function buildClientReadyReport(){
-  const service = (UI.service?.value || "").trim();
-  const region = (UI.region?.value || "").trim();
-  const province = (UI.province?.value || "").trim();
   const clientPrice = (UI.outClientPrice?.textContent || "").trim();
-
-  if(!service || !clientPrice || clientPrice === "—") return "";
-
-  // Partiamo dal riepilogo già generato e "ripuliamo" le righe interne
   const raw = (UI.outText?.textContent || "").trim();
+
+  if(!raw || raw === "Carica dati…" || !clientPrice || clientPrice === "—") return "";
+
   const lines = raw.split("\n").map(s => s.trim()).filter(Boolean);
 
-  const keep = [];
+  const out = [];
+  out.push("*TRASPORTO — STIMA*");
+
   for(const ln of lines){
     const up = ln.toUpperCase();
 
-    // rimuovi righe interne/tecniche
     if(up.startsWith("REGOLE:")) continue;
     if(up.startsWith("ATTENZIONE:")) continue;
     if(up.startsWith("COSTO STIMATO:")) continue;
 
-    // eventuali note tecniche duplicate (restano già come alert nella UI)
+    if(up.includes("PROVINCIA") && up.includes("TARIFFATA")) continue;
+    if(up.startsWith("NOTA:")) continue;
     if(up.startsWith("NOTA / CONTROLLO")) continue;
 
-    keep.push(ln);
+    if(up.startsWith("SERVIZIO:")){
+      out.push(`Servizio: ${ln.split(":").slice(1).join(":").trim()}`);
+      continue;
+    }
+    if(up.startsWith("DESTINAZIONE:")){
+      out.push(`Destinazione: ${ln.split(":").slice(1).join(":").trim()}`);
+      continue;
+    }
+    if(up.startsWith("CARICO:")){
+      out.push(`Carico: ${ln.split(":").slice(1).join(":").trim()}`);
+      continue;
+    }
+
+    if(ln.startsWith("-")){
+      let s = ln.replace(/^\-\s*/, "• ");
+      s = s.replace(/\s*\[stack\]\s*/ig, "");
+      s = s.replace(/\s*\[BASE\]\s*/ig, " (Base)");
+      s = s.replace(/\s+/g, " ").trim();
+      out.push(s);
+      continue;
+    }
+
+    if(up.startsWith("GROUPAGE:")){
+      const rest = ln.split(":").slice(1).join(":").trim();
+      out.push(`Dati: ${rest}`);
+      continue;
+    }
+
+    if(up.startsWith("OPZIONI:")){
+      const rest = ln.split(":").slice(1).join(":").trim();
+      out.push(`Opzioni: ${rest || "nessuna"}`);
+      continue;
+    }
+
+    out.push(ln);
   }
 
-  // Rendi più compatto: niente "Carica dati…"
-  const compact = keep.filter(ln => ln !== "Carica dati…");
+  out.push("");
+  out.push(`*TOTALE: ${clientPrice}*`);
 
-  // Header + totale
-  const header = "TRASPORTO — STIMA";
-  const total = `TOTALE: ${clientPrice}`;
-
-  // Se troppo lungo, taglia (WhatsApp)
-  const body = compact.slice(0, 30).join("\n");
-
-  return `${header}\n${body}\n\n${total}`.trim();
+  return out.slice(0, 40).join("\n").trim();
 }
+
 
 function shareViaWhatsApp(text){
   const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
