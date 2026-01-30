@@ -73,6 +73,292 @@ const MEM = {
   batchCSVResult: null
 };
 
+
+/* -------------------- GROUPAGE MULTI-CARICO (base + stackabili) -------------------- */
+/*
+  Obiettivo: per il groupage, poter aggiungere più articoli in un "carico" unico.
+  - scegli una BASE (pianale) -> determina i Metri Lineari a terra
+  - gli articoli "stackabili" non aumentano i LM a terra (ma sommano peso / bancali / quintali se presenti)
+  - gli articoli NON stackabili sommano LM a terra
+  - LM usati = max(LM base, somma LM non-stackabili)
+  - LM fatturati = arrotondamento a scatto (default 1.0m, leggibile da meta.lm_step se presente)
+
+  NOTA: non richiede modifiche a index.html: se gli elementi non esistono, li iniettiamo sotto al campo LM.
+*/
+
+const GROUPAGE_CART = []; // { artId, qty, stackable }
+let GROUPAGE_BASE_ID = null;
+
+function cartIsActive(){
+  return UI.service?.value === "GROUPAGE" && GROUPAGE_CART.length > 0;
+}
+
+function getArtById(id){
+  return DB.articles.find(a => a.id === id) || null;
+}
+
+function artGroupageParams(art){
+  // Ricava LM / quintali / bancali dall'articolo (rules.*) con fallback a 0
+  const r = art?.rules || {};
+  const lm = Number(r.groupageLm ?? 0) || 0;
+  const quintali = Number(r.groupageQuintali ?? 0) || 0;
+  const pallets = Number(r.groupagePalletCount ?? 0) || 0;
+  return { lm, quintali, pallets };
+}
+
+function groupageLmStep(){
+  const step = Number(DB.groupageRates?.meta?.lm_step ?? 1);
+  return (Number.isFinite(step) && step > 0) ? step : 1;
+}
+
+function roundUpToStep(v, step){
+  if(!Number.isFinite(v)) return 0;
+  const s = (Number.isFinite(step) && step > 0) ? step : 1;
+  return Math.ceil(v / s) * s;
+}
+
+function calcGroupageCartTotals(){
+  // Restituisce: { lmUsed, lmBill, quintaliTotal, palletsTotal, baseArt }
+  if(GROUPAGE_CART.length === 0){
+    return { lmUsed:0, lmBill:0, quintaliTotal:0, palletsTotal:0, baseArt:null };
+  }
+
+  const baseId = GROUPAGE_BASE_ID || GROUPAGE_CART[0].artId;
+  const baseEntry = GROUPAGE_CART.find(x => x.artId === baseId) || GROUPAGE_CART[0];
+  const baseArt = getArtById(baseEntry.artId);
+
+  // Base LM: trattiamo base come "una base fisica" (non moltiplichiamo per qty) perché in groupage tipicamente si ragiona per pianale.
+  // Se vuoi che qty moltiplichi LM base, basta cambiare lmBase = params.lm * baseEntry.qty
+  const baseParams = artGroupageParams(baseArt);
+  const lmBase = baseParams.lm;
+
+  let lmNonStack = 0;
+  let quintaliTotal = 0;
+  let palletsTotal = 0;
+
+  for(const it of GROUPAGE_CART){
+    const art = getArtById(it.artId);
+    const params = artGroupageParams(art);
+    const q = Math.max(1, parseInt(it.qty || 1, 10));
+
+    // Totali (somma)
+    quintaliTotal += (params.quintali * q);
+    palletsTotal += (params.pallets * q);
+
+    // LM a terra: solo per NON stackabili, esclusa la base
+    if(it.artId !== baseId){
+      if(!it.stackable){
+        lmNonStack += (params.lm * q);
+      }
+    }
+  }
+
+  const lmUsed = Math.max(lmBase, lmNonStack);
+  const lmBill = roundUpToStep(lmUsed, groupageLmStep());
+
+  return {
+    lmUsed: round2(lmUsed),
+    lmBill: round2(lmBill),
+    quintaliTotal: round2(quintaliTotal),
+    palletsTotal: round2(palletsTotal),
+    baseArt
+  };
+}
+
+/* -------------------- UI: BOX CARICO GROUPAGE (iniettato) -------------------- */
+
+function ensureGroupageCartUI(){
+  // Se non ho i campi base, esco
+  if(!UI.lmField || !$("groupageCartBox")){
+    // creo un box sotto LM
+    if(!UI.lmField) return;
+
+    const box = document.createElement("div");
+    box.id = "groupageCartBox";
+    box.className = "panel";
+    box.style.marginTop = "10px";
+    box.innerHTML = `
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <b>Carico Groupage</b>
+        <button type="button" id="btnAddToCarico" class="btn">Aggiungi articolo</button>
+        <button type="button" id="btnClearCarico" class="btn btn-ghost">Svuota</button>
+      </div>
+
+      <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <label style="display:flex; gap:6px; align-items:center;">
+          Base (pianale):
+          <select id="caricoBaseSelect"></select>
+        </label>
+
+        <span style="opacity:.8;">
+          LM usati: <b id="caricoLmUsed">0</b> • LM fatturati: <b id="caricoLmBill">0</b> • q.li tot: <b id="caricoQuintali">0</b> • bancali tot: <b id="caricoPallets">0</b>
+        </span>
+      </div>
+
+      <div id="caricoList" style="margin-top:8px;"></div>
+
+      <div style="margin-top:8px; font-size:12px; opacity:.85;">
+        Suggerimento: scegli come <b>Base</b> il macchinario più lungo (es. PFA 50). Metti <b>stackabile</b> su ciò che “sale sopra” (equilibratrice, assetto).
+      </div>
+    `;
+    UI.lmField.appendChild(box);
+  }
+
+  // bind
+  const btnAdd = $("btnAddToCarico");
+  const btnClear = $("btnClearCarico");
+  const baseSel = $("caricoBaseSelect");
+
+  if(btnAdd && !btnAdd.__bound){
+    btnAdd.__bound = true;
+    btnAdd.addEventListener("click", () => {
+      const art = selectedArticle();
+      const qty = Math.max(1, parseInt(UI.qty?.value || "1", 10) || 1);
+      if(!art) return;
+
+      const defaultStackable = (art.rules?.stackable === false) ? false : true;
+
+      const found = GROUPAGE_CART.find(x => x.artId === art.id);
+      if(found){
+        found.qty += qty;
+      } else {
+        GROUPAGE_CART.push({ artId: art.id, qty, stackable: defaultStackable });
+      }
+
+      if(!GROUPAGE_BASE_ID) GROUPAGE_BASE_ID = art.id;
+
+      renderGroupageCart();
+      try{ onCalc(); }catch(e){}
+    });
+  }
+
+  if(btnClear && !btnClear.__bound){
+    btnClear.__bound = true;
+    btnClear.addEventListener("click", () => {
+      GROUPAGE_CART.splice(0, GROUPAGE_CART.length);
+      GROUPAGE_BASE_ID = null;
+      renderGroupageCart();
+      try{ onCalc(); }catch(e){}
+    });
+  }
+
+  if(baseSel && !baseSel.__bound){
+    baseSel.__bound = true;
+    baseSel.addEventListener("change", () => {
+      GROUPAGE_BASE_ID = baseSel.value || null;
+      renderGroupageCart();
+      try{ onCalc(); }catch(e){}
+    });
+  }
+
+  renderGroupageCart();
+}
+
+function renderGroupageCart(){
+  const box = $("groupageCartBox");
+  if(!box) return;
+
+  const baseSel = $("caricoBaseSelect");
+  const list = $("caricoList");
+  const elLmUsed = $("caricoLmUsed");
+  const elLmBill = $("caricoLmBill");
+  const elQ = $("caricoQuintali");
+  const elP = $("caricoPallets");
+
+  // Popola select base
+  if(baseSel){
+    baseSel.innerHTML = "";
+    const o0 = document.createElement("option");
+    o0.value = "";
+    o0.textContent = "—";
+    baseSel.appendChild(o0);
+
+    for(const it of GROUPAGE_CART){
+      const art = getArtById(it.artId);
+      if(!art) continue;
+      const opt = document.createElement("option");
+      opt.value = it.artId;
+      opt.textContent = `${art.code ? art.code + " — " : ""}${art.name || it.artId}`;
+      baseSel.appendChild(opt);
+    }
+    baseSel.value = GROUPAGE_BASE_ID || "";
+  }
+
+  // Lista
+  if(list){
+    if(GROUPAGE_CART.length === 0){
+      list.innerHTML = `<div style="opacity:.75;">Nessun articolo nel carico. (Solo GROUPAGE: puoi aggiungere più articoli.)</div>`;
+    } else {
+      const rows = GROUPAGE_CART.map((it, idx) => {
+        const art = getArtById(it.artId);
+        const label = art ? `${art.brand ? art.brand+" — " : ""}${art.name}${art.code ? " · "+art.code : ""}` : it.artId;
+        const isBase = (it.artId === (GROUPAGE_BASE_ID || GROUPAGE_CART[0].artId));
+        const stackChecked = it.stackable ? "checked" : "";
+        return `
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:6px 0; border-bottom:1px solid rgba(0,0,0,.08);">
+            <span style="min-width:280px;"><b>${isBase ? "BASE" : ""}</b> ${escapeHtml(label)}</span>
+            <label style="display:flex; gap:6px; align-items:center;">
+              qta
+              <input type="number" min="1" step="1" value="${it.qty}" data-idx="${idx}" data-k="qty" style="width:72px;">
+            </label>
+            <label style="display:flex; gap:6px; align-items:center;">
+              stackabile
+              <input type="checkbox" ${stackChecked} data-idx="${idx}" data-k="stackable">
+            </label>
+            <button type="button" class="btn btn-ghost" data-idx="${idx}" data-k="rm">Rimuovi</button>
+          </div>
+        `;
+      }).join("");
+      list.innerHTML = rows;
+
+      // bind row events (delegation)
+      list.querySelectorAll("input,button").forEach(el => {
+        if(el.__bound) return;
+        el.__bound = true;
+
+        const idx = parseInt(el.getAttribute("data-idx"), 10);
+        const k = el.getAttribute("data-k");
+
+        if(k === "qty"){
+          el.addEventListener("input", () => {
+            const v = Math.max(1, parseInt(el.value || "1", 10) || 1);
+            GROUPAGE_CART[idx].qty = v;
+            renderGroupageCart();
+            try{ onCalc(); }catch(e){}
+          });
+        } else if(k === "stackable"){
+          el.addEventListener("change", () => {
+            GROUPAGE_CART[idx].stackable = !!el.checked;
+            renderGroupageCart();
+            try{ onCalc(); }catch(e){}
+          });
+        } else if(k === "rm"){
+          el.addEventListener("click", () => {
+            const removed = GROUPAGE_CART.splice(idx, 1);
+            if(removed && removed[0] && removed[0].artId === GROUPAGE_BASE_ID){
+              GROUPAGE_BASE_ID = GROUPAGE_CART[0]?.artId || null;
+            }
+            renderGroupageCart();
+            try{ onCalc(); }catch(e){}
+          });
+        }
+      });
+    }
+  }
+
+  // Totali
+  const t = calcGroupageCartTotals();
+  if(elLmUsed) elLmUsed.textContent = String(t.lmUsed || 0);
+  if(elLmBill) elLmBill.textContent = String(t.lmBill || 0);
+  if(elQ) elQ.textContent = String(t.quintaliTotal || 0);
+  if(elP) elP.textContent = String(t.palletsTotal || 0);
+}
+
+// semplice escape per label in HTML (evita problemi se nome ha < >)
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
 function moneyEUR(v){
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
   return new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(v);
@@ -466,12 +752,21 @@ function computeGLS(){
   };
 }
 
-function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote}){
+function buildSummary({service, region, province, art, qty, palletType, lm, quintali, palletCount, opts, cost, rules, alerts, extraNote, cartInfo}){
   const lines = [];
   lines.push(`SERVIZIO: ${service}`);
   lines.push(`DESTINAZIONE: ${province ? (province + " / ") : ""}${region || "—"}`);
-  lines.push(`ARTICOLO: ${art ? `${art.brand || ""} ${art.name} (${art.code || art.id})`.trim() : "—"}`);
-  lines.push(`QTA: ${qty}`);
+
+  // Se è attivo il carico groupage multi-articolo, riepilogo dettagliato
+  if(service === "GROUPAGE" && cartInfo && Array.isArray(cartInfo.items) && cartInfo.items.length){
+    lines.push(`CARICO: ${cartInfo.items.length} articoli`);
+    for(const it of cartInfo.items){
+      lines.push(`- ${it.label} x${it.qty}${it.isBase ? " [BASE]" : ""}${it.stackable ? " [stack]" : ""}`);
+    }
+  } else {
+    lines.push(`ARTICOLO: ${art ? `${art.brand || ""} ${art.name} (${art.code || art.id})`.trim() : "—"}`);
+    lines.push(`QTA: ${qty}`);
+  }
 
   if(service === "PALLET") lines.push(`Bancale: ${palletType || "—"}`);
   if(service === "GROUPAGE") lines.push(`Groupage: LM=${lm} | q.li=${quintali} | plt=${palletCount}`);
@@ -518,9 +813,41 @@ function onCalc(){
   const qty = Math.max(1, parseInt(UI.qty.value || "1", 10));
   const palletType = (UI.palletType.value || "").trim();
 
-  const lm = parseFloat(UI.lm.value || "0");
-  const quintali = parseFloat(UI.quintali.value || "0");
-  const palletCount = parseFloat(UI.palletCount.value || "0");
+  let lm = parseFloat(UI.lm.value || "0");
+  let quintali = parseFloat(UI.quintali.value || "0");
+  let palletCount = parseFloat(UI.palletCount.value || "0");
+
+  // ✅ GROUPAGE multi-carico: se ho articoli nel carico, calcolo LM/q.li/bancali dal carico
+  let cartInfo = null;
+  if(UI.service.value === "GROUPAGE" && GROUPAGE_CART.length){
+    const t = calcGroupageCartTotals();
+    // Forziamo i campi in modo trasparente (utile anche per copia/incolla screenshot)
+    if(UI.lm && !isTouched(UI.lm)) UI.lm.value = String(t.lmBill || 0);
+    if(UI.quintali && !isTouched(UI.quintali)) UI.quintali.value = String(t.quintaliTotal || 0);
+    if(UI.palletCount && !isTouched(UI.palletCount)) UI.palletCount.value = String(t.palletsTotal || 0);
+
+    lm = Number(t.lmBill || 0);
+    quintali = Number(t.quintaliTotal || 0);
+    palletCount = Number(t.palletsTotal || 0);
+
+    cartInfo = {
+      lmUsed: t.lmUsed,
+      lmBill: t.lmBill,
+      quintaliTotal: t.quintaliTotal,
+      palletsTotal: t.palletsTotal,
+      baseId: GROUPAGE_BASE_ID || GROUPAGE_CART[0].artId,
+      items: GROUPAGE_CART.map(it => {
+        const a = getArtById(it.artId);
+        return {
+          id: it.artId,
+          qty: it.qty,
+          stackable: !!it.stackable,
+          isBase: it.artId === (GROUPAGE_BASE_ID || GROUPAGE_CART[0].artId),
+          label: a ? `${a.brand ? a.brand + " — " : ""}${a.name}${a.code ? " · " + a.code : ""}` : it.artId
+        };
+      })
+    };
+  }
 
   const opts = {
     preavviso: !!UI.optPreavviso.checked,
@@ -538,7 +865,7 @@ function onCalc(){
   if(service === "PALLET"){
     out = computePallet({ region, palletType, qty, opts, art });
   } else if(service === "GROUPAGE"){
-    out = computeGroupage({ province, lm, quintali, palletCount, opts, art });
+    out = computeGroupage({ province, lm, quintali, palletCount, opts, art: (cartInfo?.baseId ? getArtById(cartInfo.baseId) : art) });
   } else {
     out = computeGLS();
   }
@@ -558,7 +885,8 @@ function onCalc(){
     cost: out.cost,
     rules: out.rules || [],
     alerts: out.alerts || [],
-    extraNote: UI.extraNote.value || ""
+    extraNote: UI.extraNote.value || "",
+    cartInfo
   });
 
   UI.outText.textContent = summary;
@@ -643,6 +971,9 @@ async function init(){
   // Articles
   renderArticleList("");
 
+  // Groupage multi-carico UI (iniettato sotto il campo LM)
+  ensureGroupageCartUI();
+
   // ✅ touched tracking (manual override)
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
   if(UI.lm) UI.lm.addEventListener("input", () => markTouched(UI.lm));
@@ -659,6 +990,7 @@ async function init(){
   // Events
   UI.service.addEventListener("change", () => {
     applyServiceUI();
+    ensureGroupageCartUI();
     // reset costo/cliente quando cambio servizio
     LAST_COST = null;
     updateClientPriceDisplay();
