@@ -2104,8 +2104,13 @@
       ],
       "volM3": 0.216
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "scm-3-scm-3",
@@ -2122,8 +2127,13 @@
       ],
       "volM3": 0.216
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "scm-4eb-scm-4eb",
@@ -2140,8 +2150,13 @@
       ],
       "volM3": 0.216
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "scm-476-scm-476",
@@ -2158,8 +2173,13 @@
       ],
       "volM3": 0.216
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "scm-9-scm-9",
@@ -2176,8 +2196,13 @@
       ],
       "volM3": 0.28
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sollevatore-oleopneumatico-opj30-cod-06100092-sollevatore-oleopneumatico-opj30-cod-06100092",
@@ -2194,8 +2219,13 @@
       ],
       "volM3": 0.448
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sollevatore-oleopneumatico-opj40-cod-06100093-sollevatore-oleopneumatico-opj40-cod-06100093",
@@ -2212,8 +2242,13 @@
       ],
       "volM3": 0.448
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sollevatore-oleopneumatico-opj50-cod-06100094-sollevatore-oleopneumatico-opj50-cod-06100094",
@@ -2230,8 +2265,13 @@
       ],
       "volM3": 0.504
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sollevatore-oleopneumatico-opj60-cod-06100095-sollevatore-oleopneumatico-opj60-cod-06100095",
@@ -2248,8 +2288,13 @@
       ],
       "volM3": 0.448
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sollevatore-pneum-mobile-tj2-cod-06200038-sollevatore-pneum-mobile-tj2-cod-06200038",
@@ -2266,8 +2311,13 @@
       ],
       "volM3": 0.384
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sollevatore-pneum-mobile-tj3n-cod-06200042-sollevatore-pneum-mobile-tj3n-cod-06200042",
@@ -2284,8 +2334,13 @@
       ],
       "volM3": 0.384
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sollevatore-pneum-mobile-tj2-tel-cod-06200041-sollevatore-pneum-mobile-tj2-tel-cod-06200041",
@@ -2302,8 +2357,13 @@
       ],
       "volM3": 0.384
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "pressa-idraulica-ps15-cod-10201046-pressa-idraulica-ps15-cod-10201046",
@@ -2320,8 +2380,13 @@
       ],
       "volM3": 0.384
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "pressa-idraulica-ps30-cod-10201047-pressa-idraulica-ps30-cod-10201047",
@@ -2338,8 +2403,13 @@
       ],
       "volM3": 0.576
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "pressa-idraulica-ps50-cod-10201048-pressa-idraulica-ps50-cod-10201048",
@@ -2356,8 +2426,13 @@
       ],
       "volM3": 0.73932
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "gru-idraulica-a-carrello-gc10-cod-10201049-gru-idraulica-a-carrello-gc10-cod-10201049",
@@ -2374,8 +2449,13 @@
       ],
       "volM3": 0.512
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sollevatore-da-fossa-sf-600-cod-10201050-sollevatore-da-fossa-sf-600-cod-10201050",
@@ -2392,8 +2472,13 @@
       ],
       "volM3": 0.384
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "handy-scan-handy-scan",
@@ -2412,9 +2497,13 @@
     },
     "rules": {
       "suggestGLS": true,
-      "suggestGLSReason": "Nota: usare GLS"
+      "suggestGLSReason": "Nota: usare GLS",
+      "forceService": "PALLET",
+      "allowGroupage": false
     },
-    "tags": [],
+    "tags": [
+      "ATTREZZATURA"
+    ],
     "note": "spedizione GLS"
   },
   {
@@ -2434,9 +2523,13 @@
     },
     "rules": {
       "suggestGLS": true,
-      "suggestGLSReason": "Nota: usare GLS"
+      "suggestGLSReason": "Nota: usare GLS",
+      "forceService": "PALLET",
+      "allowGroupage": false
     },
-    "tags": [],
+    "tags": [
+      "ATTREZZATURA"
+    ],
     "note": "spedizione GLS"
   },
   {
@@ -2456,9 +2549,13 @@
     },
     "rules": {
       "suggestGLS": true,
-      "suggestGLSReason": "Nota: usare GLS"
+      "suggestGLSReason": "Nota: usare GLS",
+      "forceService": "PALLET",
+      "allowGroupage": false
     },
-    "tags": [],
+    "tags": [
+      "ATTREZZATURA"
+    ],
     "note": "spedizione GLS"
   },
   {
@@ -2476,8 +2573,13 @@
       ],
       "volM3": 2.176
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "ge-23-gonfiatore-elettronico-ge-23-gonfiatore-elettronico",
@@ -2496,9 +2598,13 @@
     },
     "rules": {
       "suggestGLS": true,
-      "suggestGLSReason": "Nota: usare GLS"
+      "suggestGLSReason": "Nota: usare GLS",
+      "forceService": "PALLET",
+      "allowGroupage": false
     },
-    "tags": [],
+    "tags": [
+      "ATTREZZATURA"
+    ],
     "note": "spedizione GLS"
   },
   {
@@ -2516,8 +2622,13 @@
       ],
       "volM3": 0.56225
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "nic-20-nic-20",
@@ -2534,8 +2645,13 @@
       ],
       "volM3": 0.798048
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "nil-50-nil-50",
@@ -2552,8 +2668,13 @@
       ],
       "volM3": 0.798048
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "nit-18-nit-18",
@@ -2570,8 +2691,13 @@
       ],
       "volM3": 0.75998
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sa-1200-sa-1200",
@@ -2588,8 +2714,13 @@
       ],
       "volM3": 1.0125
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "sa-2500-sa-2500",
@@ -2606,8 +2737,13 @@
       ],
       "volM3": 1.0125
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "vl-22-vasca-d-ispezione-cod-10100031-vl-22-vasca-d-ispezione-cod-10100031",
@@ -2624,8 +2760,13 @@
       ],
       "volM3": 1.78125
     },
-    "rules": {},
-    "tags": []
+    "rules": {
+      "forceService": "PALLET",
+      "allowGroupage": false
+    },
+    "tags": [
+      "ATTREZZATURA"
+    ]
   },
   {
     "id": "cascos-c-3-2-13120e",
