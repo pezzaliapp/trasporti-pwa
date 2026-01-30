@@ -41,6 +41,7 @@ const UI = {
   extraNote: $("extraNote"),
   btnCalc: $("btnCalc"),
   btnCopy: $("btnCopy"),
+  btnShare: $("btnShare"),
   btnShareWA: $("btnShareWA"),
   btnExportTxt: $("btnExportTxt"),
   markupMode: $("markupMode"),
@@ -410,6 +411,7 @@ function updateClientPriceDisplay(){
 */
 
 function enableShareButtons(enabled){
+  if(UI.btnShare) UI.btnShare.disabled = !enabled;
   if(UI.btnShareWA) UI.btnShareWA.disabled = !enabled;
   if(UI.btnExportTxt) UI.btnExportTxt.disabled = !enabled;
 }
@@ -459,6 +461,27 @@ function shareViaWhatsApp(text){
   window.open(url, "_blank", "noopener");
 }
 
+
+async function shareNative(text){
+  // Web Share API (mobile / iOS PWA). Fallback: copia negli appunti.
+  try{
+    if(navigator.share){
+      await navigator.share({ title: "Trasporto — Stima", text });
+      return;
+    }
+  }catch(e){
+    // user cancelled or not available -> fallback
+  }
+  try{
+    await navigator.clipboard.writeText(text);
+    // feedback leggero (senza alert invasivi)
+    
+  }catch(e){
+    // ultimo fallback: prompt
+    window.prompt("Copia il testo:", text);
+  }
+}
+
 function downloadTxt(text){
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -474,6 +497,20 @@ function downloadTxt(text){
 }
 
 function wireShareButtons(){
+  // Mostra "Condividi" solo se supportato (o comunque utile come copia negli appunti)
+  if(UI.btnShare){
+    // Se Web Share API non c'è, il bottone funziona come "copia negli appunti"
+    UI.btnShare.textContent = navigator.share ? "Condividi" : "Copia";
+    if(!UI.btnShare.__bound){
+      UI.btnShare.__bound = true;
+      UI.btnShare.addEventListener("click", async () => {
+        const txt = buildClientReadyReport();
+        if(!txt) return;
+        await shareNative(txt);
+      });
+    }
+  }
+
   if(UI.btnShareWA && !UI.btnShareWA.__bound){
     UI.btnShareWA.__bound = true;
     UI.btnShareWA.addEventListener("click", () => {
