@@ -715,9 +715,20 @@ function computeGroupage({province, lm, quintali, palletCount, opts, art}){
     };
   }
 
-  candidates.sort((a,b)=>a.price-b.price);
-  let base = candidates[0].price;
-  rules.push(`best:${candidates[0].mode}`);
+  // Selezione tariffa: per groupage normalmente si applica il vincolo PIÙ penalizzante
+  // (LM / quintali / bancali). Default: MAX. Puoi forzare MIN via groupage_rates.json -> meta.selection_mode="min".
+  const selectionMode = (DB.groupageRates?.meta?.selection_mode || "max").toLowerCase();
+
+  let picked;
+  if(selectionMode === "min"){
+    picked = candidates.reduce((best, cur) => (best==null || cur.price < best.price) ? cur : best, null);
+    rules.push(`pick:min:${picked.mode}`);
+  } else {
+    picked = candidates.reduce((worst, cur) => (worst==null || cur.price > worst.price) ? cur : worst, null);
+    rules.push(`pick:max:${picked.mode}`);
+  }
+
+  let base = picked.price;
 
   if(opts.sponda && DB.groupageRates?.meta?.liftgate_fee != null){
     base += DB.groupageRates.meta.liftgate_fee;
