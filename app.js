@@ -41,6 +41,8 @@ const UI = {
   extraNote: $("extraNote"),
   btnCalc: $("btnCalc"),
   btnCopy: $("btnCopy"),
+  btnShareWA: $("btnShareWA"),
+  btnExportTxt: $("btnExportTxt"),
   markupMode: $("markupMode"),
   markupPct: $("markupPct"),
   outClientPrice: $("outClientPrice"),
@@ -400,6 +402,100 @@ function updateClientPriceDisplay(){
   return price;
 }
 
+/* -------------------- SHARE (WhatsApp + TXT) -------------------- */
+/*
+  Obiettivo: inviare un report "client-ready" con:
+  - Servizio / Destinazione / Carico (se groupage multi-carico) / Opzioni / Note extra (se presenti)
+  - Totale: PREZZO CLIENTE (già calcolato) — senza citare ricarico/margine
+*/
+
+function enableShareButtons(enabled){
+  if(UI.btnShareWA) UI.btnShareWA.disabled = !enabled;
+  if(UI.btnExportTxt) UI.btnExportTxt.disabled = !enabled;
+}
+
+function buildClientReadyReport(){
+  const service = (UI.service?.value || "").trim();
+  const region = (UI.region?.value || "").trim();
+  const province = (UI.province?.value || "").trim();
+  const clientPrice = (UI.outClientPrice?.textContent || "").trim();
+
+  if(!service || !clientPrice || clientPrice === "—") return "";
+
+  // Partiamo dal riepilogo già generato e "ripuliamo" le righe interne
+  const raw = (UI.outText?.textContent || "").trim();
+  const lines = raw.split("\n").map(s => s.trim()).filter(Boolean);
+
+  const keep = [];
+  for(const ln of lines){
+    const up = ln.toUpperCase();
+
+    // rimuovi righe interne/tecniche
+    if(up.startsWith("REGOLE:")) continue;
+    if(up.startsWith("ATTENZIONE:")) continue;
+    if(up.startsWith("COSTO STIMATO:")) continue;
+
+    // eventuali note tecniche duplicate (restano già come alert nella UI)
+    if(up.startsWith("NOTA / CONTROLLO")) continue;
+
+    keep.push(ln);
+  }
+
+  // Rendi più compatto: niente "Carica dati…"
+  const compact = keep.filter(ln => ln !== "Carica dati…");
+
+  // Header + totale
+  const header = "TRASPORTO — STIMA";
+  const total = `TOTALE: ${clientPrice}`;
+
+  // Se troppo lungo, taglia (WhatsApp)
+  const body = compact.slice(0, 30).join("\n");
+
+  return `${header}\n${body}\n\n${total}`.trim();
+}
+
+function shareViaWhatsApp(text){
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank", "noopener");
+}
+
+function downloadTxt(text){
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+  a.download = `trasporto-${ts}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function wireShareButtons(){
+  if(UI.btnShareWA && !UI.btnShareWA.__bound){
+    UI.btnShareWA.__bound = true;
+    UI.btnShareWA.addEventListener("click", () => {
+      const txt = buildClientReadyReport();
+      if(!txt) return;
+      shareViaWhatsApp(txt);
+    });
+  }
+
+  if(UI.btnExportTxt && !UI.btnExportTxt.__bound){
+    UI.btnExportTxt.__bound = true;
+    UI.btnExportTxt.addEventListener("click", () => {
+      const txt = buildClientReadyReport();
+      if(!txt) return;
+      downloadTxt(txt);
+    });
+  }
+
+  enableShareButtons(false);
+}
+
+
 function show(el, yes){ if(el) el.style.display = yes ? "" : "none"; }
 
 async function loadJSON(path){
@@ -480,6 +576,7 @@ function applyServiceUI(){
   if(UI.outAlerts) UI.outAlerts.innerHTML = "";
   if(UI.outCost) UI.outCost.textContent = "—";
   if(UI.btnCopy) UI.btnCopy.disabled = true;
+  enableShareButtons(false);
 }
 
 function searchArticles(q){
@@ -904,7 +1001,10 @@ function onCalc(){
   UI.outCost.textContent = moneyEUR(out.cost);
   // Salvo ultimo costo e aggiorno prezzo cliente in tempo reale
   LAST_COST = (out && Number.isFinite(out.cost)) ? out.cost : null;
-  updateClientPriceDisplay();
+  const __clientPrice = updateClientPriceDisplay();
+  // Abilita share solo se esiste un report client-ready valido
+  enableShareButtons(!!(__clientPrice && buildClientReadyReport()));
+
   UI.dbgRules.textContent = (out.rules || []).join(", ") || "—";
 
   UI.btnCopy.disabled = !summary;
@@ -984,6 +1084,9 @@ async function init(){
 
   // Groupage multi-carico UI (iniettato sotto il campo LM)
   ensureGroupageCartUI();
+
+  // Share buttons (WhatsApp + TXT)
+  wireShareButtons();
 
   // ✅ touched tracking (manual override)
   if(UI.palletType) UI.palletType.addEventListener("change", () => markTouched(UI.palletType));
