@@ -133,4 +133,4 @@ Sezione dedicata a:
 ---
 
 ## Licenza
-Progetto ad uso interno/didattico (impostare qui la licenza se vuoi pubblicarla).
+Progetto ad uso interno/didattico LICENZA MIT
